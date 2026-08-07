@@ -1,14 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authApi } from '../../../lib/api/auth.api';
 import { ApiError } from '../../../lib/api/client';
 
+// useSearchParams() exige um boundary de Suspense em build estático do
+// Next.js (senão o `next build` falha em "Generating static pages" com
+// "should be wrapped in a suspense boundary") — o conteúdo real fica no
+// componente interno, e o default export só cuida do Suspense.
+export default function RedefinirSenhaPage() {
+  return (
+    <Suspense fallback={null}>
+      <RedefinirSenhaForm />
+    </Suspense>
+  );
+}
+
 // Chegada só possível pelo link do e-mail (ver ForgotPasswordUseCase) — o
 // token vem na querystring, nunca digitado à mão.
-export default function RedefinirSenhaPage() {
+function RedefinirSenhaForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
