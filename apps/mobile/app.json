@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Portal Alvim Análises",
+    "slug": "portal-alvim-analises",
+    "scheme": "portalalvim",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.com.alvimanalises.portal"
+    },
+    "android": {
+      "package": "br.com.alvimanalises.portal"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"]
+  }
+}

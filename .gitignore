@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+.turbo/
+out/
+
+# Expo
+.expo/
+apps/mobile/.expo/
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Prisma
+apps/backend/storage/*
+!apps/backend/storage/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# TypeScript
+*.tsbuildinfo

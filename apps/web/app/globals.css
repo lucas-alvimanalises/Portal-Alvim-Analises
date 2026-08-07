@@ -1,0 +1,266 @@
+:root {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-border: #e2e5e9;
+  --color-text: #1c1f24;
+  --color-text-muted: #6b7280;
+  --color-primary: #1f5f4d;
+  --color-primary-hover: #164539;
+  --color-primary-soft: #eaf3f0;
+  --color-danger: #b3261e;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Escala de espaçamento — múltiplos de 4px (ver especificação de
+     modernização visual: "definir uma escala... e aplicá-la de forma
+     consistente"). Usada em paddings/margins/gaps novos; o CSS existente
+     que já usava valores fixos próximos (16/20/24) foi migrado pros tokens
+     mais próximos, não redesenhado do zero. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Escala tipográfica única — título de página, subtítulo de seção, corpo
+     de tabela, legenda/label (ver especificação). */
+  --font-size-page-title: 22px;
+  --font-size-section-title: 13px;
+  --font-size-card-value: 26px;
+  --font-size-body: 14px;
+  --font-size-small: 13px;
+  --font-size-label: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 14px rgba(16, 24, 40, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+/* Sombra sutil por padrão em todo card (Dashboard, listagens, modais/
+   painéis flutuantes) — ver especificação de modernização visual,
+   "profundidade visual". Cards dentro de cards (ex.: linha expandida de
+   Certificados Pendentes) continuam funcionando normalmente — a sombra é
+   sutil o bastante pra não empilhar de forma estranha. */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Cards que navegam pra uma lista filtrada (ex.: StatCard do Dashboard) —
+   dá o afordance visual de "isso é clicável" que faltava (cards pareciam
+   clicáveis mas não faziam nada, ver especificação de navegação). Hover
+   eleva a sombra e o card sobe 1px, reforçando "isso responde ao clique". */
+.card-clickable {
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  text-decoration: none;
+  display: block;
+}
+.card-clickable:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.input,
+select.input,
+textarea.input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-body);
+  background: white;
+  color: var(--color-text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus,
+select.input:focus,
+textarea.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.field label {
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.field-error {
+  color: var(--color-danger);
+  font-size: var(--font-size-label);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-body);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+th {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: var(--font-size-label);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Linha de tabela interativa — reforça visualmente que é clicável (ver
+   especificação: "em todas as tabelas do portal"). Uma única regra global
+   cobre toda tabela `<table>` simples do app, sem precisar tocar tela por
+   tela; onde a linha em si não é clicável (raro), o hover ainda é inofensivo
+   — só um destaque visual. */
+tbody tr {
+  transition: background-color 0.12s ease;
+}
+tbody tr:hover {
+  background: var(--color-bg);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+  background: #eef2f1;
+  color: var(--color-primary);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-5);
+}
+
+.page-header h1 {
+  font-size: var(--font-size-page-title);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Subtítulo de seção — mesmo padrão visual usado nos blocos do Dashboard
+   ("Ação Necessária", "Compliance do Mês", "Visão Geral") e reaproveitável
+   em qualquer outra tela que precise agrupar conteúdo sob um rótulo
+   discreto (ver especificação: escala tipográfica única). */
+.section-title {
+  font-size: var(--font-size-section-title);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--space-3);
+}
+
+/* Skeleton loading — substitui o texto simples "Carregando..." em toda tela
+   do portal (ver especificação de modernização visual, "estados de
+   carregamento") e componentes em apps/web/components/shared/Skeleton.tsx. */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.skeleton {
+  background: #e4e7eb;
+  border-radius: var(--radius-sm);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+/* Layout do portal (menu lateral + cabeçalho com Voltar/Sair) nunca deve
+   imprimir — a única tela que usa window.print() hoje é a de etiquetas
+   (ver ImprimirEtiquetasPage), mas isso vale pra qualquer impressão futura
+   também: ninguém quer o menu saindo na etiqueta/relatório impresso. */
+@media print {
+  aside,
+  header {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}

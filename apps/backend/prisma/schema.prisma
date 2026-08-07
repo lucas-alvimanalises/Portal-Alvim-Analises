@@ -1,0 +1,1061 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  TECHNICIAN
+  CLIENT
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_TRANSIT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum AttachmentKind {
+  PHOTO
+  ATTACHMENT_FILE
+  CERTIFICATE_PDF
+  CUSTODY_DOCUMENT
+  SIGNATURE
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MaintenanceNature {
+  PREVENTIVE
+  CORRECTIVE
+  EMERGENCY
+  INSPECTION
+  CALIBRATION
+  REPLACEMENT
+  CLEANING
+  OPERATIONAL_ADJUSTMENT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  jobTitle     String?
+  role         Role
+  active       Boolean  @default(true)
+
+  // Preferência de receber notificações por e-mail (ex.: PDF de Ordem de
+  // Serviço enviado ao cliente). Relevante sobretudo para role = CLIENT.
+  emailNotifications Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens         RefreshToken[]
+  passwordResetTokens   PasswordResetToken[]
+  schedulesAsTechnician ScheduleTechnician[] @relation("TechnicianSchedules")
+  uploadedAttachments   Attachment[]
+  notifications         Notification[]
+  samplesResponsible    Sample[]       @relation("SampleResponsible")
+  certificatesResponsible Certificate[] @relation("CertificateResponsible")
+  custodyDocumentsUploaded CustodyDocument[] @relation("CustodyDocumentUploader")
+  custodyExtractionsApproved CustodyExtraction[] @relation("CustodyExtractionApprover")
+  certificateExtractionsApproved CertificateExtraction[] @relation("CertificateExtractionApprover")
+  calendarNotes CalendarNote[] @relation("CalendarNoteTechnician")
+  printedLabels PrintedLabel[]
+  serviceChecklistsFilled ServiceChecklist[]
+  plantMaintenancesCreated PlantMaintenance[]
+  anpMonthlyReportsGenerated AnpMonthlyReport[]
+  anpRegulatoryLimitsUpdated AnpRegulatoryLimit[]
+  fieldReportsGenerated      FieldReport[]
+  serviceResultsSummariesGenerated ServiceResultsSummary[]
+
+  // Só populado quando role = CLIENT: um usuário-cliente (pessoa) pode ter
+  // acesso a várias empresas (N:N) — ele escolhe qual visualizar por vez no
+  // portal (ver ClientUser abaixo e AuthenticatedUser.clientIds).
+  clientLinks ClientUser[]
+
+  // Assinatura digital cadastrada pelo próprio usuário (ver módulo users,
+  // rotas self-service /users/me/signature) — inserida automaticamente no
+  // campo "Assinatura amostrador" ao aprovar uma cadeia de custódia (ver
+  // CustodyTemplateSchema.signatureFieldKey).
+  signatureFileId String?     @unique
+  signature       Attachment? @relation("UserSignature", fields: [signatureFileId], references: [id])
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// "Esqueci minha senha" — link enviado por e-mail com um token de uso único
+// (guardado só o hash, mesmo princípio do RefreshToken.tokenHash). Um pedido
+// novo invalida qualquer token anterior do mesmo usuário (ver
+// ForgotPasswordUseCase); usedAt marca o token como já consumido, já que
+// diferente do refresh token ele não é rotacionado, só usado uma vez.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model Client {
+  id          String       @id @default(uuid())
+  companyName String
+  cnpj        String       @unique
+  address     String?
+  city        String?
+  state       String?
+  // Link do Google Maps do endereço — usado futuramente para o técnico
+  // navegar até o cliente direto do app mobile.
+  mapsUrl     String?
+  mainContact String?
+  email       String?
+  phone       String?
+  status      ClientStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts      Contract[]
+  schedules      Schedule[]
+  samples        Sample[]
+  userLinks      ClientUser[]
+  samplingPoints SamplingPoint[]
+  plantMaintenances PlantMaintenance[]
+  anpMonthlyReports AnpMonthlyReport[]
+
+  @@map("clients")
+}
+
+// Manutenções que o próprio cliente faz na planta (troca de carvão ativado,
+// membranas, compressor, ...) — histórico pra futuramente cruzar com
+// resultados analíticos (ver ARCHITECTURE.md futuro: efeito de uma
+// manutenção na concentração de um composto). Uma manutenção futura com
+// status "programada"/"em andamento" também bloqueia (com aviso) o
+// agendamento de serviço da Alvim na mesma data (ver
+// PlantMaintenancesService.checkConflicts, usado em CreateScheduleUseCase).
+//
+// Sem conceito de "Unidade"/"Planta" separado — Client já é uma planta
+// física só hoje (confirmado com o usuário), então a manutenção é vinculada
+// direto à empresa, igual todo o resto do sistema já assume.
+model PlantMaintenance {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Dia da manutenção (meia-noite UTC, mesmo padrão de Schedule.scheduledDate).
+  date DateTime
+  // "HH:mm" — texto simples, sem precedente de campo de hora isolado no
+  // schema hoje; não precisa de mais que isso pra exibição/registro.
+  startTime String?
+  endTime   String?
+
+  status MaintenanceStatus @default(SCHEDULED)
+  nature MaintenanceNature
+
+  // Tipo da Manutenção — multi-select de chaves fixas (ver
+  // MAINTENANCE_TYPE_OPTIONS em @portal-alvim/shared) + "Outro" livre.
+  types     String[]
+  otherType String?
+
+  // Objetivo da manutenção — mesmo padrão de Tipo (ver
+  // MAINTENANCE_OBJECTIVE_OPTIONS).
+  objectives     String[]
+  otherObjective String?
+
+  description String @db.Text
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attachments Attachment[]
+
+  @@index([clientId])
+  @@index([date])
+  @@map("plant_maintenances")
+}
+
+// Lookup extensível (mesmo padrão do ServiceType): tipos de ponto de
+// amostragem comuns entre clientes (ex.: "1ª Barreira (ANP)", "2ª Barreira"),
+// usados para comparar resultados entre empresas mesmo quando cada uma chama
+// o ponto por um nome próprio diferente.
+model SamplingPointStandard {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  active Boolean @default(true)
+
+  points SamplingPoint[]
+
+  @@map("sampling_point_standards")
+}
+
+model SamplingPoint {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  // Nome que o próprio cliente usa para esse ponto (cada empresa nomeia diferente).
+  name String
+
+  // Opcional: marca este ponto como equivalente a um tipo padrão comparável
+  // entre empresas (ver SamplingPointStandard acima).
+  standardId String?
+  standard   SamplingPointStandard? @relation(fields: [standardId], references: [id])
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schedules ScheduleSamplingPoint[]
+  samples   Sample[]
+  printedLabels PrintedLabel[]
+
+  @@index([clientId])
+  @@map("sampling_points")
+}
+
+// Junção N:N entre User (papel CLIENT) e Client (empresa): um usuário-cliente
+// pode ter acesso a mais de uma empresa e escolhe qual visualizar no portal.
+model ClientUser {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, clientId])
+  @@map("client_users")
+}
+
+model Contract {
+  id          String    @id @default(uuid())
+  clientId    String
+  client      Client    @relation(fields: [clientId], references: [id])
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  periodicity String?
+  active      Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scopes    ContractScope[]
+  schedules Schedule[]
+
+  @@index([clientId])
+  @@map("contracts")
+}
+
+// Lookup extensível: novos tipos de serviço são um registro novo, não uma migration.
+model ServiceType {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  active      Boolean @default(true)
+  // Se false, amostras desse tipo de serviço ficam "Concluídas" sem precisar
+  // de certificado anexado (cadeia de custódia continua exigida normalmente,
+  // por composto — ver CustodyFieldTemplate.custodyRequired). Usado pra
+  // "Coleta de amostras": cliente contrata só a coleta, não a consultoria/
+  // análise laboratorial (confirmado com o usuário) — mas certificados
+  // ainda podem ser anexados manualmente se a Alvim tiver acesso a eles.
+  requiresCertificate Boolean @default(true)
+
+  scopes    ContractScope[]
+  schedules Schedule[]
+
+  @@map("service_types")
+}
+
+model ContractScope {
+  id            String      @id @default(uuid())
+  contractId    String
+  contract      Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  serviceTypeId String
+  serviceType   ServiceType @relation(fields: [serviceTypeId], references: [id])
+
+  @@unique([contractId, serviceTypeId])
+  @@map("contract_scopes")
+}
+
+model Schedule {
+  id         String    @id @default(uuid())
+  // Opcional: o agendamento é feito direto pra empresa, sem precisar
+  // selecionar um contrato. Mantido para permitir vincular/reportar por
+  // contrato depois, quando fizer sentido.
+  contractId String?
+  contract   Contract? @relation(fields: [contractId], references: [id])
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  serviceTypeId String
+  serviceType   ServiceType @relation(fields: [serviceTypeId], references: [id])
+
+  // Serviços podem durar mais de um dia: data de início e fim (sem horário).
+  // endDate nula = serviço de 1 dia só.
+  scheduledDate DateTime
+  endDate       DateTime?
+
+  // false quando só se sabe o mês do serviço ainda (clientes mensais
+  // agendados com meses de antecedência, sem dia certo definido) —
+  // scheduledDate guarda o dia 1 do mês nesse caso. Vira status "Programado"
+  // em vez de "Agendado" nas telas de Agendamento (ver ScheduleDerivedStatusService).
+  dateConfirmed Boolean @default(true)
+
+  // Numeração sequencial da Ordem de Serviço, exibida no PDF gerado. Começa
+  // em 160 (ajustado via setval na migration) porque o sistema anterior da
+  // Alvim já contava com agendas numeradas até ali.
+  orderNumber Int @unique @default(autoincrement())
+
+  status ScheduleStatus @default(SCHEDULED)
+
+  // Anotações de campo do técnico (o que fugiu do esperado na coleta) — uso
+  // interno, nunca exposto a usuários papel CLIENT (ver schedule.mapper.ts).
+  internalComments String? @db.Text
+  // Texto redigido pela Alvim sobre o serviço, visível ao cliente.
+  clientComments   String? @db.Text
+  // Resposta do cliente ao comentário acima — só o cliente edita, a equipe
+  // Alvim só lê.
+  clientResponse   String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  execution      ServiceExecution?
+  samplingPoints ScheduleSamplingPoint[]
+  samples        Sample[]
+  // Um serviço pode precisar de mais de um técnico em campo (N:N).
+  technicians    ScheduleTechnician[]
+  printedLabels  PrintedLabel[]
+  checklist      ServiceChecklist?
+  fieldReport    FieldReport?
+  resultsSummaries ServiceResultsSummary[]
+
+  @@index([clientId])
+  @@map("schedules")
+}
+
+model ScheduleTechnician {
+  id         String   @id @default(uuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  technicianId String
+  technician   User   @relation("TechnicianSchedules", fields: [technicianId], references: [id])
+
+  @@unique([scheduleId, technicianId])
+  @@map("schedule_technicians")
+}
+
+// Anotação livre num dia do calendário da Agenda (ex.: "Viagem ida Fortaleza
+// Victor") — não é um agendamento, só um lembrete visual. technicianId é
+// opcional e só serve pra colorir o texto da nota igual à cor já usada pros
+// cards desse técnico no calendário (ver technician-colors.ts no frontend).
+model CalendarNote {
+  id   String   @id @default(uuid())
+  date DateTime
+  text String
+
+  technicianId String?
+  technician   User?   @relation("CalendarNoteTechnician", fields: [technicianId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@map("calendar_notes")
+}
+
+// Check list de material de campo preenchido pelo técnico antes/depois do
+// serviço (ver "Organizar Serviço" > "Preencher Check List de Campo",
+// adaptado do "CheckList Alvim Análises.xlsx"). checkedItems guarda só as
+// chaves marcadas (ver FIELD_CHECKLIST_SECTIONS em @portal-alvim/shared) —
+// a lista de itens em si é fixa no código, não no banco. Um só por
+// agendamento; salvar de novo sobrescreve (o técnico pode reabrir e
+// corrigir antes/depois de ir a campo).
+model ServiceChecklist {
+  id String @id @default(uuid())
+
+  scheduleId String   @unique
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  // { itemKey: quantidade } — só entra aqui quem tem quantidade > 0 (ex.:
+  // "impingers": 9). Ver FIELD_CHECKLIST_SECTIONS em @portal-alvim/shared
+  // pra lista fixa de itens.
+  quantities Json
+
+  filledById String
+  filledBy   User   @relation(fields: [filledById], references: [id])
+  filledAt   DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  @@map("service_checklists")
+}
+
+// Compostos analisáveis (11000 - Siloxanos, 12000 - VOCs, ...): lookup
+// extensível, mesmo padrão do ServiceType. O código numérico segue a
+// numeração de pastas usada internamente pela Alvim.
+model Compound {
+  id     String  @id @default(uuid())
+  code   String  @unique // ex.: "11000"
+  name   String  @unique // ex.: "Siloxanos"
+  active Boolean @default(true)
+
+  schedulePoints ScheduleSamplingPointCompound[]
+  samples        Sample[]
+  custodyDocuments CustodyDocument[]
+  custodyFieldTemplate CustodyFieldTemplate?
+  certificateAnalyteTemplate CertificateAnalyteTemplate?
+  printedLabels PrintedLabel[]
+  labelSequence LabelSequence?
+
+  @@map("compounds")
+}
+
+// Junção N:N: um agendamento pode cobrir vários pontos de amostragem da
+// empresa (ex.: "1ª Barreira" e "2ª Barreira" na mesma visita).
+model ScheduleSamplingPoint {
+  id         String   @id @default(uuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  samplingPointId String
+  samplingPoint   SamplingPoint @relation(fields: [samplingPointId], references: [id])
+
+  // Quais compostos serão amostrados neste ponto, nesta visita (1..N por ponto).
+  compounds ScheduleSamplingPointCompound[]
+
+  @@unique([scheduleId, samplingPointId])
+  @@map("schedule_sampling_points")
+}
+
+model ScheduleSamplingPointCompound {
+  id                      String                @id @default(uuid())
+  scheduleSamplingPointId String
+  scheduleSamplingPoint   ScheduleSamplingPoint @relation(fields: [scheduleSamplingPointId], references: [id], onDelete: Cascade)
+
+  compoundId String
+  compound   Compound @relation(fields: [compoundId], references: [id])
+
+  // Quantas amostras desse composto serão coletadas neste ponto (ex.: 2
+  // amostras de Siloxanos na mesma visita) — evita precisar de uma linha
+  // duplicada para o mesmo composto no mesmo ponto.
+  quantity Int @default(1)
+
+  @@unique([scheduleSamplingPointId, compoundId])
+  @@map("schedule_sampling_point_compounds")
+}
+
+// Etiqueta física (impressora Zebra ZD-220, 100x40mm, só Siloxanos e
+// Compostos Sulfurados/Enxofre hoje) — cada amostra (frasco) imprime 3
+// etiquetas de número sequencial (Siloxanos ainda soma +1 etiqueta em
+// branco, sem número, só no momento da impressão — não gera PrintedLabel).
+// Um registro por etiqueta numerada (bottleIndex+labelIndex), nunca
+// reaproveitando número mesmo se reimpresso (ver LabelSequence). Reimprimir
+// a mesma etiqueta (mesmo ponto+composto+frasco+índice) reusa o número já
+// atribuído em vez de consumir um novo — ver LabelsService.
+//
+// Referencia scheduleId+samplingPointId+compoundId DIRETO (não
+// scheduleSamplingPointCompoundId) de propósito: editar um agendamento
+// (ScheduleForm) apaga e recria ScheduleSamplingPoint/
+// ScheduleSamplingPointCompound inteiros a cada "Salvar alterações" (ver
+// PrismaScheduleRepository.update), o que apagaria etiquetas já impressas
+// de verdade por causa do onDelete: Cascade se a referência fosse pro id
+// efêmero da junção. scheduleId/samplingPointId/compoundId são estáveis —
+// sobrevivem a qualquer edição do agendamento.
+model PrintedLabel {
+  id String @id @default(uuid())
+
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  samplingPointId String
+  samplingPoint   SamplingPoint @relation(fields: [samplingPointId], references: [id])
+
+  compoundId String
+  compound   Compound @relation(fields: [compoundId], references: [id])
+
+  // 1..quantity — só organização/exibição, não é o número impresso.
+  bottleIndex Int
+
+  // 1..3 — qual das 3 etiquetas sequenciais desse frasco (a etiqueta em
+  // branco do Siloxanos não entra aqui, não tem número pra guardar).
+  labelIndex Int @default(1)
+
+  // Número físico da etiqueta — sequência própria por composto (ver
+  // LabelSequence), jamais reaproveitado.
+  number Int
+
+  printedById String
+  printedBy   User @relation(fields: [printedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([scheduleId, samplingPointId, compoundId, bottleIndex, labelIndex])
+  @@unique([compoundId, number])
+  @@map("printed_labels")
+}
+
+// Contador do próximo número de etiqueta por composto — Siloxanos e
+// Compostos Sulfurados têm sequências independentes. Só cresce; nunca
+// reaproveita um número mesmo que a etiqueta correspondente seja apagada.
+model LabelSequence {
+  compoundId String   @id
+  compound   Compound @relation(fields: [compoundId], references: [id])
+  lastNumber Int      @default(0)
+
+  @@map("label_sequences")
+}
+
+// Fase 1: schema + migration criados, mas sem controller/rota exposta (módulo stub).
+model ServiceExecution {
+  id            String    @id @default(uuid())
+  scheduleId    String    @unique
+  schedule      Schedule  @relation(fields: [scheduleId], references: [id])
+  executionDate DateTime
+  technicianId  String
+  notes         String?
+
+  // Checklist mantido como JSON livre nesta fase (sem necessidade de reportar
+  // por item ainda). Ver ARCHITECTURE.md para o caminho de migração para
+  // uma tabela ChecklistItem caso isso mude.
+  checklistData Json?
+
+  startTime DateTime?
+  endTime   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attachments Attachment[]
+
+  @@map("service_executions")
+}
+
+// Amostra coletada durante um agendamento (visita), opcionalmente vinculada a
+// um dos pontos de amostragem cobertos naquele agendamento.
+model Sample {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+
+  samplingPointId String?
+  samplingPoint   SamplingPoint? @relation(fields: [samplingPointId], references: [id])
+
+  // Composto amostrado — define em qual "pasta" (11000 - Siloxanos etc.) a
+  // amostra aparece na tela de Amostras. Nullable no schema para preservar
+  // registros antigos; obrigatório no cadastro via DTO.
+  compoundId String?
+  compound   Compound? @relation(fields: [compoundId], references: [id])
+
+  collectionDate     DateTime
+  collectionLocation String?
+  responsibleUserId  String?
+  responsibleUser    User?    @relation("SampleResponsible", fields: [responsibleUserId], references: [id])
+  analysisType       String?
+  notes              String?
+  active             Boolean  @default(true)
+
+  // Código/número da amostra usado internamente pelo laboratório (opcional,
+  // nem toda amostra tem um).
+  sampleCode String?
+  // Andamento da análise em si — independente de já existir um certificado
+  // anexado ou não.
+  analysisStatus AnalysisStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  certificates       Certificate[]
+  resultRows         SampleResultRow[]
+  custodyDocuments   CustodyDocument[]
+  custodyExtractions CustodyExtraction[]
+  certificateExtractions CertificateExtraction[]
+
+  @@index([clientId])
+  @@index([scheduleId])
+  @@index([compoundId])
+  @@index([samplingPointId])
+  @@index([collectionDate])
+  @@map("samples")
+}
+
+enum AnalysisStatus {
+  PENDING
+  IN_ANALYSIS
+  COMPLETED
+}
+
+enum ComplianceStatus {
+  CONFORME
+  // Dentro do limite regulatório, mas acima de um patamar de atenção
+  // definido por composto (ex.: Siloxanos — abaixo de 0,3 mg Si/m³ é
+  // Conforme, mas a partir de 0,21 mg Si/m³ já merece acompanhamento).
+  ATENCAO
+  NAO_CONFORME
+}
+
+// Linha de resultado de um composto específico medido dentro de uma análise
+// (Sample). Não confundir com o model Compound (o "tipo de análise", ex.:
+// Siloxanos) — aqui é o parâmetro individual do laudo, ex.: "D4", "Benzeno".
+// Estrutura pensada para consultas históricas/dashboards futuros (ver
+// ARCHITECTURE.md): cliente/serviço/data/ponto/tipo de análise já são
+// alcançáveis via Sample; só o parâmetro e o resultado em si são novos aqui.
+model SampleResultRow {
+  id       String @id @default(uuid())
+  sampleId String
+  sample   Sample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  parameterName String
+  // Texto livre — preserva notação de laudo como "< 0,01" sem tentar virar
+  // número, evitando perda de precisão/formato do resultado original.
+  result     String
+  unit       String
+  specLimit  String?
+  compliance ComplianceStatus?
+  notes      String?
+  // Ordem de exibição estável dentro da análise.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sampleId])
+  @@index([parameterName])
+  @@map("sample_result_rows")
+}
+
+// Metadado + arquivo de um certificado emitido para uma análise (Sample).
+// Uma Sample pode ter vários Certificate (sem @unique em sampleId): cada
+// arquivo anexado/substituído vira uma linha própria.
+model Certificate {
+  id                String   @id @default(uuid())
+  sampleId          String
+  sample            Sample   @relation(fields: [sampleId], references: [id])
+  certificateNumber String
+  laboratory        String
+  // Data em que o laboratório efetivamente analisou a amostra — diferente de
+  // issueDate (data de emissão do documento do certificado).
+  analysisDate DateTime
+  issueDate    DateTime
+
+  fileId String     @unique
+  file   Attachment @relation(fields: [fileId], references: [id])
+
+  responsibleUserId String?
+  responsibleUser   User?   @relation("CertificateResponsible", fields: [responsibleUserId], references: [id])
+
+  version String @default("1")
+  status  String @default("Emitido")
+
+  // Preenchido só quando este certificado foi criado a partir de uma leitura
+  // por IA aprovada (ver CertificateExtraction) — null para os certificados
+  // anexados manualmente, sem digitalização.
+  extractionOrigin CertificateExtraction?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sampleId])
+  @@map("certificates")
+}
+
+// Como as análises extraídas de um certificado viram linhas de resultado da
+// amostra na aprovação: PER_ANALYTE cria uma linha por análise configurada
+// (padrão). COLLAPSE_BELOW_LQ é pra painéis com muitos parâmetros (ex.:
+// Metais, ~30 metais por laudo) — se TODOS os resultados vierem com "<"
+// (abaixo do limite de quantificação), gera uma única linha resumo
+// (collapsedResultLabel) com resultado "<LQ" em vez de 30 linhas repetitivas;
+// se algum vier sem "<" (quantificado), lista só os quantificados
+// individualmente. SKIP_ZERO é pra laudos que reportam não-detectado como
+// "0,00" em vez de "<" (ex.: Compostos Sulfurados) — cada parâmetro
+// não-zero vira sua própria linha, os "0,00" são simplesmente omitidos.
+enum CertificateResultsMode {
+  PER_ANALYTE
+  COLLAPSE_BELOW_LQ
+  SKIP_ZERO
+}
+
+// Define quais análises (parâmetros) devem ser extraídas automaticamente do
+// certificado laboratorial de cada composto, e a que unidade de medida dar
+// preferência quando o laudo traz o mesmo resultado em várias unidades (ex.:
+// mg/m³, ppb, µg/m³, ppm) — guardado como JSON pelo mesmo motivo do
+// CustodyFieldTemplate (ver CertificateAnalyteConfig[] em packages/shared).
+model CertificateAnalyteTemplate {
+  id         String   @id @default(uuid())
+  compoundId String   @unique
+  compound   Compound @relation(fields: [compoundId], references: [id])
+  analytes   Json
+
+  resultsMode          CertificateResultsMode @default(PER_ANALYTE)
+  collapsedResultLabel String?
+
+  extractions CertificateExtraction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("certificate_analyte_templates")
+}
+
+enum CertificateExtractionStatus {
+  PROCESSING
+  NEEDS_REVIEW
+  APPROVED
+  FAILED
+}
+
+// Um upload de certificado laboratorial (PDF/imagem), lido por IA (Claude
+// Vision) e conferido/corrigido por um técnico antes de virar o Certificate
+// oficial + as linhas de SampleResultRow correspondentes — ver módulo
+// certificate-extractions. Mesmo padrão de status/extractedData/
+// correctedData do CustodyExtraction.
+model CertificateExtraction {
+  id         String                     @id @default(uuid())
+  sampleId   String
+  sample     Sample                     @relation(fields: [sampleId], references: [id])
+  templateId String
+  template   CertificateAnalyteTemplate @relation(fields: [templateId], references: [id])
+
+  originalScanFileId String     @unique
+  originalScanFile   Attachment @relation(fields: [originalScanFileId], references: [id])
+
+  status CertificateExtractionStatus @default(PROCESSING)
+  // { certificateNumber, certificateNumberConfidence, analysisDate,
+  //   analysisDateConfidence, results: [{ key, parameterName, result, unit, confidence }] }
+  extractedData Json?
+  correctedData Json?
+  errorMessage  String?
+
+  approvedAt   DateTime?
+  approvedById String?
+  approvedBy   User?     @relation("CertificateExtractionApprover", fields: [approvedById], references: [id])
+
+  generatedCertificateId String?      @unique
+  generatedCertificate   Certificate? @relation(fields: [generatedCertificateId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sampleId])
+  @@map("certificate_extractions")
+}
+
+// Arquivo de "Cadeia de Custódia" (PDF) organizado por composto + ano —
+// espelha a estrutura de pastas que a Alvim já usa no OneDrive
+// (Amostragem de Campo > {composto} > {ano}). Sem vínculo de empresa: os
+// documentos de origem misturam clientes diferentes na mesma pasta de ano,
+// então essa tela fica restrita a ADMIN/MANAGER (ver role-permissions.ts).
+model CustodyDocument {
+  id         String   @id @default(uuid())
+  compoundId String
+  compound   Compound @relation(fields: [compoundId], references: [id])
+  year       Int
+
+  fileId String     @unique
+  file   Attachment @relation(fields: [fileId], references: [id])
+
+  uploadedById String
+  uploadedBy   User   @relation("CustodyDocumentUploader", fields: [uploadedById], references: [id])
+
+  // Preenchido só quando o documento vem do fluxo de digitalização
+  // inteligente (ver CustodyExtraction) — null nos ~1954 importados do
+  // OneDrive, que não têm amostra de origem rastreável.
+  sampleId String?
+  sample   Sample? @relation(fields: [sampleId], references: [id])
+
+  generatedFromExtraction CustodyExtraction?
+
+  createdAt DateTime @default(now())
+
+  @@index([compoundId])
+  @@index([year])
+  @@index([sampleId])
+  @@map("custody_documents")
+}
+
+// Define os campos esperados no formulário de cada composto — guardado como
+// JSON pra caber layouts bem diferentes (nº de colunas, linhas de tabela)
+// sem precisar de migration nova a cada composto adicionado (ver
+// CustodyTemplateSchema em packages/shared).
+model CustodyFieldTemplate {
+  id         String   @id @default(uuid())
+  compoundId String   @unique
+  compound   Compound @relation(fields: [compoundId], references: [id])
+  fields     Json
+
+  // Se a cadeia de custódia aprovada é exigida pra amostra/agendamento
+  // contarem como concluídos (ver ScheduleDerivedStatusService,
+  // SampleCompletionService). Default true pra todo composto novo —
+  // Microbiologia e Compostos Sulfurados começam false, porque nunca
+  // tiveram cadeia de custódia digitalizada antes desta plataforma
+  // (confirmado com o usuário; ele avisa quando o portal for lançado
+  // oficialmente pra virar obrigatório pros agendamentos a partir dali).
+  custodyRequired Boolean @default(true)
+
+  extractions CustodyExtraction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("custody_field_templates")
+}
+
+enum CustodyExtractionStatus {
+  PROCESSING
+  NEEDS_REVIEW
+  APPROVED
+  FAILED
+}
+
+// Um upload de foto/PDF da cadeia de custódia manuscrita, lido por IA
+// (Claude Vision) e conferido/corrigido por um técnico antes de virar o
+// CustodyDocument oficial — ver módulo custody-extractions.
+model CustodyExtraction {
+  id         String               @id @default(uuid())
+  sampleId   String
+  sample     Sample               @relation(fields: [sampleId], references: [id])
+  templateId String
+  template   CustodyFieldTemplate @relation(fields: [templateId], references: [id])
+
+  // Ausente quando a cadeia foi gerada por preenchimento manual dos campos
+  // (sem digitalização por IA) — ver CreateManualCustodyExtractionUseCase.
+  originalScanFileId String?     @unique
+  originalScanFile   Attachment? @relation(fields: [originalScanFileId], references: [id])
+
+  // Foto do serviço (ver ServiceExecution/Attachment.kind=PHOTO) escolhida
+  // pelo técnico na tela de conferência pra entrar no PDF gerado, abaixo de
+  // "Observações" — opcional.
+  selectedPhotoId String?
+  selectedPhoto   Attachment? @relation("CustodyExtractionSelectedPhoto", fields: [selectedPhotoId], references: [id])
+
+  status CustodyExtractionStatus @default(PROCESSING)
+  // { fields: { [key]: { value, confidence } }, table: { [column]: { [row]: { value, confidence } } } }
+  extractedData Json?
+  // Mesma forma de extractedData, só que com as correções do técnico — null
+  // até a primeira edição; na aprovação usa correctedData ?? extractedData.
+  correctedData Json?
+  errorMessage  String?
+
+  approvedAt   DateTime?
+  approvedById String?
+  approvedBy   User?     @relation("CustodyExtractionApprover", fields: [approvedById], references: [id])
+
+  generatedDocumentId String?          @unique
+  generatedDocument   CustodyDocument? @relation(fields: [generatedDocumentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sampleId])
+  @@map("custody_extractions")
+}
+
+// Ponteiro genérico de arquivo (fotos, anexos e PDFs de certificado).
+// storageKey é opaco ao domínio: só o FileStorageService sabe resolvê-lo
+// (disco local hoje, S3/Supabase Storage amanhã) — ver ARCHITECTURE.md.
+model Attachment {
+  id         String         @id @default(uuid())
+  kind       AttachmentKind
+  storageKey String
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+
+  uploadedById String
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id])
+
+  serviceExecutionId String?
+  serviceExecution   ServiceExecution? @relation(fields: [serviceExecutionId], references: [id])
+
+  plantMaintenanceId String?
+  plantMaintenance   PlantMaintenance? @relation(fields: [plantMaintenanceId], references: [id])
+
+  certificate Certificate?
+  custodyDocument CustodyDocument?
+  anpMonthlyReport AnpMonthlyReport?
+  fieldReport FieldReport?
+  serviceResultsSummary ServiceResultsSummary?
+  custodyExtractionScan CustodyExtraction?
+  custodyExtractionSelectedIn CustodyExtraction[] @relation("CustodyExtractionSelectedPhoto")
+  signatureOfUser User? @relation("UserSignature")
+  certificateExtractionScan CertificateExtraction?
+
+  createdAt DateTime @default(now())
+
+  @@map("attachments")
+}
+
+// Estrutura preparada para notificações futuras (novo agendamento,
+// certificado disponível, etc.) — sem disparo real nesta fase.
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+enum AnpReportParameter {
+  SILOXANOS
+  FLUORADOS
+  CLORADOS
+}
+
+// Limites regulatórios usados no Relatório Mensal ANP — tabela de
+// configuração dedicada (só 3 linhas), editável pela tela de
+// "Limites Regulatórios ANP" (Admin/Gestor), de propósito independente da
+// CertificateAnalyteTemplate genérica dos certificados: aqui o limite é
+// autoritativo pro protocolo na ANP, sem depender de mexer em seed/código
+// pra ajustar um valor (confirmado com o usuário).
+model AnpRegulatoryLimit {
+  parameter       AnpReportParameter @id
+  label           String
+  regulatoryLimit Float
+  unit            String
+
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+  updatedBy   User?    @relation(fields: [updatedById], references: [id])
+
+  @@map("anp_regulatory_limits")
+}
+
+// Um PDF por empresa/ano/mês, versionado (nunca sobrescrito — corrigir um
+// certificado depois de gerado cria uma nova versão, a anterior continua
+// baixável). reportNumber é sequencial global (mesmo truque de
+// Schedule.orderNumber: Int @default(autoincrement()) fora da PK).
+model AnpMonthlyReport {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  year    Int
+  month   Int
+  version Int @default(1)
+
+  reportNumber Int @default(autoincrement())
+
+  fileId String     @unique
+  file   Attachment @relation(fields: [fileId], references: [id])
+
+  // Fingerprint (sha256) dos 3 valores usados nesta versão — recalculado a
+  // cada visita da tela pra detectar "reporte desatualizado" sem depender
+  // de updatedAt de certificado (que não é confiável: corrigir uma leitura
+  // errada apaga e recria a CertificateExtraction, ver
+  // delete-certificate-extraction.use-case.ts).
+  sourceDataHash String
+
+  generatedById String
+  generatedBy   User   @relation(fields: [generatedById], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@unique([clientId, year, month, version])
+  @@index([clientId, year, month])
+  @@map("anp_monthly_reports")
+}
+
+// Um relatório de campo por serviço (não versionado — regenerar substitui
+// o PDF anterior, ver FieldReportsService.generate). Existir esta linha É
+// o sinal de "já foi gerado" — o cliente só enxerga o relatório de campo
+// quando ela existe (confirmado com o usuário: nada aparece pro cliente
+// antes de um colaborador Alvim gerar).
+model FieldReport {
+  id         String   @id @default(uuid())
+  scheduleId String   @unique
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+
+  fileId String     @unique
+  file   Attachment @relation(fields: [fileId], references: [id])
+
+  generatedById String
+  generatedBy   User   @relation(fields: [generatedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("field_reports")
+}
+
+// Resumo consolidado de resultados de um serviço (todos os pontos/compostos
+// já lançados + comentário da Alvim) — versionado (nunca sobrescrito, igual
+// AnpMonthlyReport): editar o comentário e gerar de novo cria v2, v3... sem
+// apagar as anteriores. Diferente do FieldReport (1 por serviço, substitui):
+// aqui o pedido foi explicitamente manter todo o histórico de versões
+// acessível, no mesmo espírito de Certificados.
+model ServiceResultsSummary {
+  id         String   @id @default(uuid())
+  scheduleId String
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+
+  version Int    @default(1)
+  comment String @db.Text
+
+  fileId String     @unique
+  file   Attachment @relation(fields: [fileId], references: [id])
+
+  generatedById String
+  generatedBy   User   @relation(fields: [generatedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([scheduleId, version])
+  @@index([scheduleId])
+  @@map("service_results_summaries")
+}

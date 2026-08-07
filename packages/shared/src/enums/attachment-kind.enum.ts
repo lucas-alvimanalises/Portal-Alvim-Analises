@@ -1,0 +1,5 @@
+export enum AttachmentKind {
+  PHOTO = 'PHOTO',
+  ATTACHMENT_FILE = 'ATTACHMENT_FILE',
+  CERTIFICATE_PDF = 'CERTIFICATE_PDF',
+}
