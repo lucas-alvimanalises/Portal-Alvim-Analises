@@ -1,5 +1,11 @@
 'use client';
 
+// Nota: a lista de itens/roles do menu vem de NAV_ITEMS em
+// packages/shared/src/constants/role-permissions.ts. Um diff só nesse
+// pacote não é suficiente pra Railway rebuildar o serviço web sozinho (o
+// watch path dele é escopado a apps/web) — qualquer mudança em NAV_ITEMS
+// precisa vir acompanhada de um toque real aqui, ou o front continua
+// servindo o bundle antigo mesmo com o deploy "concluído".
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
