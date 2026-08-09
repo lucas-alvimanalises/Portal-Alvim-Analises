@@ -7,10 +7,12 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ServiceResultsSummaryService } from './service-results-summary.service';
 import { GenerateServiceResultsSummaryDto } from './dto/generate-service-results-summary.dto';
 
-// Ferramenta interna Alvim (nesta primeira etapa o envio ao cliente é
-// manual, por fora do portal — ver spec) — sem acesso nenhum de CLIENT ou
-// TECHNICIAN, diferente de Relatório de Campo/Reporte ANP que têm uma perna
-// voltada ao cliente.
+// Gerar/pré-visualizar continua ferramenta interna Alvim (ADMIN/MANAGER,
+// default de classe). Ver/baixar já gerado passou a ter perna pro Cliente
+// (pedido do usuário) — mesmo padrão do Relatório de Campo: Cliente só
+// acessa o que já existe, nunca gera. listVersions/downloadFile já escopam
+// por clientId (assertOwnership), então abrir o @Roles delas pra CLIENT não
+// vaza dado de outra empresa.
 @Controller('service-results-summary')
 @UseGuards(RolesGuard)
 @Roles(Role.ADMIN, Role.MANAGER)
@@ -31,6 +33,7 @@ export class ServiceResultsSummaryController {
   }
 
   @Get(':scheduleId/versions')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
   listVersions(@Param('scheduleId') scheduleId: string, @CurrentUser() user: AuthenticatedUser) {
     return this.service.listVersions(scheduleId, user);
   }
@@ -45,6 +48,7 @@ export class ServiceResultsSummaryController {
   }
 
   @Get('reports/:id/file')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
   async downloadFile(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,

@@ -49,6 +49,11 @@ export default function ResultadosAnaliticosPage() {
   const params = useParams<{ id: string }>();
   const { data: me } = useCurrentUser();
   const canManageFieldReport = me?.role === Role.ADMIN || me?.role === Role.MANAGER;
+  // Cliente não gera Resumo de Resultados (botão continua exclusivo
+  // ADMIN/MANAGER), mas passou a ver o histórico já gerado — mesmo
+  // princípio do Relatório de Campo: só acessa o que já existe (pedido do
+  // usuário).
+  const canViewResultsSummary = canManageFieldReport || me?.role === Role.CLIENT;
   const [showPhotos, setShowPhotos] = useState(false);
   const [showFieldReportModal, setShowFieldReportModal] = useState(false);
   const [selectedSampleIds, setSelectedSampleIds] = useState<Set<string>>(new Set());
@@ -272,7 +277,7 @@ export default function ResultadosAnaliticosPage() {
             </div>
           )}
 
-          {canManageFieldReport && <ResultsSummaryHistory scheduleId={params.id} />}
+          {canViewResultsSummary && <ResultsSummaryHistory scheduleId={params.id} />}
 
           {schedule && (
             <ScheduleCommentsSection
