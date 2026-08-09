@@ -19,17 +19,25 @@ export const NAV_ITEMS: NavItem[] = [
   // menos Usuários e Contratos).
   { label: 'Dashboard', href: '/dashboard', roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT] },
   // Histórico de manutenções que o próprio cliente faz na planta — Cliente
-  // cadastra/consulta as próprias; ADMIN/MANAGER/TECHNICIAN veem de todas as
-  // empresas.
+  // cadastra/consulta as próprias; ADMIN/MANAGER veem de todas as empresas.
+  // Técnico teve esse item removido do menu (pedido do usuário) — ainda
+  // assim continua vendo contagens de manutenção no Dashboard e marcadores
+  // no Histórico, que usam os mesmos endpoints de LEITURA por baixo (ver
+  // @Roles em plant-maintenances.controller.ts: só as rotas de
+  // escrita/gestão da tela dedicada perderam TECHNICIAN).
   {
     label: 'Manutenção da Planta',
     href: '/manutencao',
-    roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT],
+    roles: [Role.ADMIN, Role.MANAGER, Role.CLIENT],
   },
+  // Técnico teve esse item removido do menu (pedido do usuário) — a rota
+  // separada dashboard-compliance usada pelo bloco "Compliance do mês" do
+  // Dashboard mantém seu próprio @Roles incluindo TECHNICIAN, então esse
+  // indicador continua funcionando pra ele.
   {
     label: 'Reportes Mensais ANP',
     href: '/reportes-anp',
-    roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT],
+    roles: [Role.ADMIN, Role.MANAGER, Role.CLIENT],
   },
   { label: 'Usuários', href: '/usuarios', roles: [Role.ADMIN] },
   { label: 'Empresas', href: '/empresas', roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN] },

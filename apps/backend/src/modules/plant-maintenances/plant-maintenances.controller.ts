@@ -24,13 +24,15 @@ import { PlantMaintenancesService } from './plant-maintenances.service';
 import { CreatePlantMaintenanceDto } from './dto/create-plant-maintenance.dto';
 import { UpdatePlantMaintenanceDto } from './dto/update-plant-maintenance.dto';
 
-// Técnico também participa agora (confirmado com o usuário: acesso a todo o
-// menu menos Usuários e Contratos) — mesmo acesso do item de menu (ver
-// NAV_ITEMS), sem distinção de rota entre leitura e escrita aqui (mesmo
-// nível que CLIENT já tinha pras próprias manutenções).
+// Técnico teve o menu "Manutenção da Planta" removido (pedido do usuário) —
+// mas o Dashboard (contagens) e o Histórico (marcadores no gráfico) ainda
+// usam findByClient/checkConflicts por baixo dos panos, então essas duas
+// rotas de leitura mantêm @Roles próprio incluindo TECHNICIAN. As rotas de
+// gestão da tela dedicada (detalhe, criar/editar/excluir, anexos) ficam só
+// com o default de classe (sem TECHNICIAN).
 @Controller('plant-maintenances')
 @UseGuards(RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
+@Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
 export class PlantMaintenancesController {
   constructor(private readonly plantMaintenancesService: PlantMaintenancesService) {}
 
@@ -38,6 +40,7 @@ export class PlantMaintenancesController {
   // de rota diferente, sem ambiguidade real) — usada pelo ScheduleForm antes
   // de submeter um agendamento.
   @Get('conflicts')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
   checkConflicts(
     @Query('clientId') clientId: string,
     @Query('startDate') startDate: string,
@@ -71,7 +74,11 @@ export class PlantMaintenancesController {
     return this.plantMaintenancesService.removeAttachment(attachmentId, user);
   }
 
+  // Usada pelo Dashboard (contagens) e pelo Histórico (marcadores no
+  // gráfico), não só pela tela dedicada — por isso mantém TECHNICIAN mesmo
+  // com o menu "Manutenção da Planta" removido pra esse papel.
   @Get()
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
   findByClient(
     @Query('clientId') clientId: string,
     @Query('year') year: string | undefined,

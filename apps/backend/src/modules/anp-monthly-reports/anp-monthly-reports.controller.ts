@@ -21,14 +21,14 @@ import { AnpMonthlyReportsService } from './anp-monthly-reports.service';
 import { AnpRegulatoryLimitsService } from './anp-regulatory-limits.service';
 import { UpdateAnpRegulatoryLimitsDto } from './dto/update-anp-regulatory-limits.dto';
 
-// Técnico agora visualiza (confirmado com o usuário: acesso a todo o menu
-// menos Usuários e Contratos), mas continua sem gerar/editar limites — só
-// as rotas de leitura ficam abertas aqui no nível do controller; gerar
-// reporte e editar limites regulatórios continuam com @Roles próprio
-// (ADMIN/MANAGER) abaixo, e excluir versão continua exclusivo de ADMIN.
+// Técnico teve o menu "Reportes Mensais ANP" removido (pedido do usuário) —
+// não acessa mais nenhuma rota deste controller por padrão. A exceção é
+// dashboard-compliance abaixo, que tem @Roles próprio incluindo TECHNICIAN
+// (alimenta o bloco "Compliance do mês" do Dashboard, uma tela separada que
+// ele continua vendo).
 @Controller('anp-monthly-reports')
 @UseGuards(RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
+@Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
 export class AnpMonthlyReportsController {
   constructor(
     private readonly anpMonthlyReportsService: AnpMonthlyReportsService,
