@@ -24,7 +24,15 @@ export function ResultsSummaryButton({ scheduleId }: ResultsSummaryButtonProps) 
 
   return (
     <>
-      <button type="button" className="btn btn-secondary" onClick={() => setShowModal(true)}>
+      {/* id usado como alvo de rolagem pelo indicador da tabela de Realizados
+          (ver ScheduleListView) quando o serviço ainda não tem nenhum
+          resumo gerado. */}
+      <button
+        id="gerar-resumo-resultados"
+        type="button"
+        className="btn btn-secondary"
+        onClick={() => setShowModal(true)}
+      >
         {versions && versions.length > 0 ? 'Gerar Nova Versão do Resumo' : 'Gerar Resumo de Resultados'}
       </button>
       {showModal && <ResultsSummaryModal scheduleId={scheduleId} onClose={() => setShowModal(false)} />}
@@ -48,7 +56,9 @@ export function ResultsSummaryHistory({ scheduleId }: ResultsSummaryHistoryProps
   if (!versions || versions.length === 0) return null;
 
   return (
-    <div className="card">
+    // id usado como alvo de rolagem pelo indicador da tabela de Realizados
+    // (ver ScheduleListView) quando o serviço já tem resumo gerado.
+    <div id="resumo-resultados" className="card">
       <h2 style={{ margin: '0 0 12px', fontSize: 15 }}>Resumo de Resultados — histórico</h2>
       <div style={{ display: 'flex', flexDirection: 'column' }}>
         {versions.map((version, index) => (

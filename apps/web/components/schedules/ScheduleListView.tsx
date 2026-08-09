@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { FileCheck2, FileText } from 'lucide-react';
 import { TableSkeleton } from '../shared/Skeleton';
 import {
   Role,
@@ -12,8 +13,10 @@ import {
   ScheduleDerivedStatus,
   ScheduleDto,
   ScheduleStatus,
+  ServiceResultsSummaryLatestDto,
 } from '@portal-alvim/shared';
 import { schedulesApi } from '../../lib/api/schedules.api';
+import { serviceResultsSummaryApi } from '../../lib/api/service-results-summary.api';
 import { useActiveClient } from '../../lib/auth/ActiveClientContext';
 import { useCurrentUser } from '../../lib/auth/useCurrentUser';
 import { FilterableHeader } from '../shared/FilterableHeader';
@@ -25,6 +28,11 @@ interface ScheduleListViewProps {
   // Só faz sentido lançar resultados de um serviço já realizado — por isso
   // esse link só aparece em Realizados, não em Agendamento.
   showResultsLink?: boolean;
+  // Indicador de Resumo de Resultados (ver spec) — só faz sentido junto com
+  // showResultsLink, e só é exibido pra quem tem acesso à ferramenta
+  // (ADMIN/MANAGER, mesma regra do botão "Gerar Resumo de Resultados" em
+  // /resultados). Escopo desta etapa: só Realizados, não Agendamento.
+  showResultsSummaryIndicator?: boolean;
   // Editar (data, técnicos, pontos) só faz sentido pra serviços que ainda
   // vão acontecer — em Realizados não tem por que reabrir esse formulário.
   // Nunca aparece pra CLIENT de qualquer forma (só ADMIN/MANAGER editam
@@ -104,6 +112,44 @@ function formatTecnicos(schedule: ScheduleDto): string {
   return schedule.technicians.length > 0 ? schedule.technicians.map((t) => t.name).join(', ') : '-';
 }
 
+// Indicador de "Resumo de Resultados" (ver spec) — evita abrir cada serviço
+// e rolar até o fim da página só pra saber se já foi gerado. Fonte do dado é
+// a mesma tabela que alimenta ResultsSummaryHistory dentro do serviço, só
+// que agregada por scheduleId (ver service-results-summary.api.ts), sem
+// duplicar nada. Clicar leva direto pra seção relevante dentro de
+// /resultados: o histórico, se já existe algum resumo; o botão de gerar, se
+// ainda não existe nenhum.
+function ResultsSummaryIndicator({
+  scheduleId,
+  latest,
+}: {
+  scheduleId: string;
+  latest: ServiceResultsSummaryLatestDto | undefined;
+}) {
+  const hasSummary = !!latest;
+  const anchor = hasSummary ? 'resumo-resultados' : 'gerar-resumo-resultados';
+  const title = hasSummary
+    ? `Resumo gerado em ${new Date(latest.createdAt).toLocaleString('pt-BR')} por ${latest.generatedByName} (v${latest.version})`
+    : 'Nenhum resumo gerado ainda';
+
+  return (
+    <Link
+      href={`/agendamentos/${scheduleId}/resultados#${anchor}`}
+      title={title}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        color: hasSummary ? '#15803d' : 'var(--color-text-muted)',
+        textDecoration: 'none',
+      }}
+    >
+      {hasSummary ? <FileCheck2 size={16} aria-hidden /> : <FileText size={16} aria-hidden />}
+      {hasSummary && <span style={{ fontSize: 12 }}>v{latest.version}</span>}
+    </Link>
+  );
+}
+
 const columnFilterKeys = ['periodo', 'empresa', 'servico', 'pontos', 'tecnicos', 'status'] as const;
 type ColumnFilterKey = (typeof columnFilterKeys)[number];
 type ColumnFilters = Record<ColumnFilterKey, string>;
@@ -129,6 +175,7 @@ export function ScheduleListView({
   emptyMessage,
   showNewButton,
   showResultsLink,
+  showResultsSummaryIndicator,
   showEditLink = true,
   filter,
   sortOrder = 'asc',
@@ -136,6 +183,7 @@ export function ScheduleListView({
   const { activeClientId } = useActiveClient();
   const { data: me } = useCurrentUser();
   const isClient = me?.role === Role.CLIENT;
+  const canManageResultsSummary = me?.role === Role.ADMIN || me?.role === Role.MANAGER;
   const [showCancelled, setShowCancelled] = useState(false);
   // Permite que os cards do Dashboard (Cliente e Admin) cheguem direto numa
   // lista já filtrada (ex.: /agendamentos/realizados?status=CONCLUIDO) — ver
@@ -165,6 +213,18 @@ export function ScheduleListView({
     queryKey: ['schedules', activeClientId],
     queryFn: () => schedulesApi.list(activeClientId ?? undefined),
   });
+
+  // Uma query só pra todos os serviços da lista (não N chamadas) — igual ao
+  // resto da tabela, ignora os filtros de coluna: eles só afetam quais
+  // linhas aparecem, não quais serviços existem na página.
+  const shouldFetchLatestSummaries = !!showResultsSummaryIndicator && canManageResultsSummary;
+  const scheduleIdsForSummary = shouldFetchLatestSummaries ? (data?.map((s) => s.id) ?? []) : [];
+  const { data: latestSummaries } = useQuery({
+    queryKey: ['results-summary', 'latest', scheduleIdsForSummary],
+    queryFn: () => serviceResultsSummaryApi.listLatestByScheduleIds(scheduleIdsForSummary),
+    enabled: shouldFetchLatestSummaries && scheduleIdsForSummary.length > 0,
+  });
+  const latestSummaryByScheduleId = new Map((latestSummaries ?? []).map((s) => [s.scheduleId, s]));
 
   function updateColumnFilter(key: ColumnFilterKey, value: string) {
     setColumnFilters((current) => ({ ...current, [key]: value }));
@@ -328,6 +388,12 @@ export function ScheduleListView({
                       )}
                       {showResultsLink && (
                         <Link href={`/agendamentos/${schedule.id}/resultados`}>Resultados</Link>
+                      )}
+                      {showResultsSummaryIndicator && canManageResultsSummary && (
+                        <ResultsSummaryIndicator
+                          scheduleId={schedule.id}
+                          latest={latestSummaryByScheduleId.get(schedule.id)}
+                        />
                       )}
                     </div>
                   </td>

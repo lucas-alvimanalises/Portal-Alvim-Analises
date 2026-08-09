@@ -16,6 +16,7 @@ export default function RealizadosPage() {
       title="Realizados"
       emptyMessage="Nenhum serviço realizado ainda."
       showResultsLink
+      showResultsSummaryIndicator
       filter={(schedule) => isScheduleRealized(schedule)}
       sortOrder="desc"
     />

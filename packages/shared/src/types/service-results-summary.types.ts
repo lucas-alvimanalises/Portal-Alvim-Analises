@@ -56,6 +56,18 @@ export interface ServiceResultsSummaryDto {
   createdAt: string;
 }
 
+// Só a versão mais recente por serviço — alimenta o indicador da tabela de
+// Realizados (ver ScheduleListView), sem duplicar dado: é a mesma tabela
+// service_results_summaries por trás do histórico completo em
+// ResultsSummaryHistory, só que agregada por scheduleId. Ausência de entrada
+// pra um scheduleId = nenhum resumo gerado ainda.
+export interface ServiceResultsSummaryLatestDto {
+  scheduleId: string;
+  version: number;
+  createdAt: string;
+  generatedByName: string;
+}
+
 export interface GenerateServiceResultsSummaryPayload {
   comment: string;
 }

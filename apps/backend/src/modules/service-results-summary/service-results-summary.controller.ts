@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthenticatedUser, Role } from '@portal-alvim/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -16,6 +16,14 @@ import { GenerateServiceResultsSummaryDto } from './dto/generate-service-results
 @Roles(Role.ADMIN, Role.MANAGER)
 export class ServiceResultsSummaryController {
   constructor(private readonly service: ServiceResultsSummaryService) {}
+
+  // Rota estática antes das rotas com :scheduleId — alimenta o indicador da
+  // tabela de Realizados (ver ScheduleListView no frontend).
+  @Get('latest')
+  getLatestByScheduleIds(@Query('scheduleIds') scheduleIds?: string) {
+    const ids = scheduleIds ? scheduleIds.split(',').filter(Boolean) : [];
+    return this.service.getLatestByScheduleIds(ids);
+  }
 
   @Get(':scheduleId/preview')
   getPreview(@Param('scheduleId') scheduleId: string, @CurrentUser() user: AuthenticatedUser) {

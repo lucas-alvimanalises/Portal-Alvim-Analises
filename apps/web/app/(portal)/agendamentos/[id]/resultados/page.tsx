@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -98,6 +98,31 @@ export default function ResultadosAnaliticosPage() {
 
   const hasAnySample = activeSamples.length > 0;
   const hasAnySlotConfigured = (schedule?.samplingPoints.length ?? 0) > 0;
+
+  // Chegada via #resumo-resultados ou #gerar-resumo-resultados (atalho do
+  // indicador na tabela de Realizados — ver ScheduleListView): rola até a
+  // seção/botão em vez de deixar o usuário procurar manualmente no fim do
+  // accordion de pontos/amostras. #resumo-resultados só existe depois que
+  // ResultsSummaryHistory resolve sua própria query (fora do isLoading desta
+  // página), por isso a retentativa por até ~2s.
+  useEffect(() => {
+    if (isLoading) return;
+    const hash = window.location.hash.replace('#', '');
+    if (!hash) return;
+    let attempts = 0;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const tryScroll = () => {
+      const el = document.getElementById(hash);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      attempts += 1;
+      if (attempts < 20) timeoutId = setTimeout(tryScroll, 100);
+    };
+    tryScroll();
+    return () => clearTimeout(timeoutId);
+  }, [isLoading]);
 
   return (
     <div>

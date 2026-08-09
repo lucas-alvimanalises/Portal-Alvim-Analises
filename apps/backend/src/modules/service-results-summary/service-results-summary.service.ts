@@ -5,6 +5,7 @@ import {
   ComplianceStatus,
   GenerateServiceResultsSummaryPayload,
   ServiceResultsSummaryDto,
+  ServiceResultsSummaryLatestDto,
   ServiceResultsSummaryPreviewDto,
   ServiceResultsSummaryRow,
 } from '@portal-alvim/shared';
@@ -219,6 +220,35 @@ export class ServiceResultsSummaryService {
       barreiraComparison,
       latestComment: latest?.comment ?? null,
     };
+  }
+
+  // Alimenta o indicador da tabela de Realizados (ver ScheduleListView) —
+  // só a versão mais recente por serviço, numa única query pra N serviços
+  // de uma vez (evita N+1 ao renderizar a tabela). Sem assertOwnership por
+  // schedule: o controller já restringe esta rota a ADMIN/MANAGER, que
+  // enxergam todos os serviços mesmo assim.
+  async getLatestByScheduleIds(scheduleIds: string[]): Promise<ServiceResultsSummaryLatestDto[]> {
+    if (scheduleIds.length === 0) return [];
+
+    const rows = await this.prisma.serviceResultsSummary.findMany({
+      where: { scheduleId: { in: scheduleIds } },
+      orderBy: [{ scheduleId: 'asc' }, { version: 'desc' }],
+      include: { generatedBy: { select: { name: true } } },
+    });
+
+    // orderBy garante version desc dentro de cada scheduleId — a primeira
+    // ocorrência de cada scheduleId já é a versão mais recente.
+    const latestByScheduleId = new Map<string, (typeof rows)[number]>();
+    for (const row of rows) {
+      if (!latestByScheduleId.has(row.scheduleId)) latestByScheduleId.set(row.scheduleId, row);
+    }
+
+    return Array.from(latestByScheduleId.values()).map((row) => ({
+      scheduleId: row.scheduleId,
+      version: row.version,
+      createdAt: row.createdAt.toISOString(),
+      generatedByName: row.generatedBy.name,
+    }));
   }
 
   async listVersions(scheduleId: string, user: AuthenticatedUser): Promise<ServiceResultsSummaryDto[]> {
