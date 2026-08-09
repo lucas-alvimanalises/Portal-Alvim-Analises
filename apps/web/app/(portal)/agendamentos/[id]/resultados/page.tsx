@@ -104,24 +104,32 @@ export default function ResultadosAnaliticosPage() {
   // seção/botão em vez de deixar o usuário procurar manualmente no fim do
   // accordion de pontos/amostras. #resumo-resultados só existe depois que
   // ResultsSummaryHistory resolve sua própria query (fora do isLoading desta
-  // página), por isso a retentativa por até ~2s.
+  // página) — em vez de um polling com prazo fixo (que em produção se
+  // mostrou curto demais e perdia a corrida), observa o DOM e rola assim
+  // que o elemento aparecer, com um timeout de segurança bem folgado.
   useEffect(() => {
     if (isLoading) return;
     const hash = window.location.hash.replace('#', '');
     if (!hash) return;
-    let attempts = 0;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    const tryScroll = () => {
+
+    const scrollIfFound = () => {
       const el = document.getElementById(hash);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-      attempts += 1;
-      if (attempts < 20) timeoutId = setTimeout(tryScroll, 100);
+      if (!el) return false;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
     };
-    tryScroll();
-    return () => clearTimeout(timeoutId);
+    if (scrollIfFound()) return;
+
+    const observer = new MutationObserver(() => {
+      if (scrollIfFound()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    const safetyTimeout = setTimeout(() => observer.disconnect(), 10000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(safetyTimeout);
+    };
   }, [isLoading]);
 
   return (
