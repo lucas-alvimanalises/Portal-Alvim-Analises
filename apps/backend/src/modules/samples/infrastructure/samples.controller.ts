@@ -64,10 +64,9 @@ export class SamplesController {
 
   // Criar/editar/excluir amostra é o passo inicial do trabalho de campo do
   // Técnico (registrar a coleta pra depois anexar a cadeia de custódia via
-  // custody-extractions, que já é liberado pra ele) — sem isso ele nem
+  // custody-extractions, que já era liberado pra ele) — sem isso ele nem
   // conseguia começar. Lançar resultado final (@Put ':id/results' abaixo)
-  // continua ADMIN/MANAGER só, por enquanto (trabalho de laboratório/QA,
-  // não de campo — revisar se o usuário quiser estender também).
+  // também foi liberado (pedido do usuário, Opção A).
   @Post()
   @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async create(@Body() dto: CreateSampleDto) {
@@ -89,8 +88,10 @@ export class SamplesController {
     return toSampleDto(sample);
   }
 
+  // Liberado pro Técnico a pedido do usuário (Opção A) — antes só
+  // ADMIN/MANAGER lançavam o resultado final.
   @Put(':id/results')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async replaceResults(@Param('id') id: string, @Body() dto: ReplaceSampleResultRowsDto) {
     const sample = await this.replaceSampleResultRowsUseCase.execute(id, dto);
     return toSampleDto(sample);

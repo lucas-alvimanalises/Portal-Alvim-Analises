@@ -32,9 +32,8 @@ import { DownloadCertificateScanUseCase } from '../application/use-cases/downloa
 import { DeleteCertificateExtractionUseCase } from '../application/use-cases/delete-certificate-extraction.use-case';
 import { toCertificateExtractionDto } from '../application/certificate-extraction.mapper';
 
-// Mesma restrição de papel do módulo certificates (upload manual): quem
-// recebe e anexa laudos do laboratório é a equipe interna (ADMIN/MANAGER),
-// não o técnico de campo — diferente de cadeia de custódia.
+// Liberado pro Técnico a pedido do usuário (Opção A) — mesmo nível de
+// ADMIN/MANAGER, igual ao módulo certificates (upload manual).
 @Controller('certificate-extractions')
 @UseGuards(RolesGuard)
 export class CertificateExtractionsController {
@@ -49,7 +48,7 @@ export class CertificateExtractionsController {
   ) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async findAll(@Query('sampleId') sampleId: string, @CurrentUser() user: AuthenticatedUser) {
     if (!sampleId) {
       throw new BadRequestException('Informe sampleId.');
@@ -59,14 +58,14 @@ export class CertificateExtractionsController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     const extraction = await this.getCertificateExtractionUseCase.execute(id, user);
     return toCertificateExtractionDto(extraction);
   }
 
   @Get(':id/scan')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async downloadScan(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -81,7 +80,7 @@ export class CertificateExtractionsController {
   }
 
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @Body() dto: UploadCertificateScanDto,
@@ -93,7 +92,7 @@ export class CertificateExtractionsController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateCertificateExtractionDto,
@@ -104,14 +103,14 @@ export class CertificateExtractionsController {
   }
 
   @Post(':id/approve')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async approve(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     const extraction = await this.approveCertificateExtractionUseCase.execute(id, user);
     return toCertificateExtractionDto(extraction);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     await this.deleteCertificateExtractionUseCase.execute(id, user);

@@ -51,7 +51,7 @@ export class CertificatesController {
   // só por organização — não há ambiguidade real (formatos com nº de
   // segmentos diferentes).
   @Get('by-sample/:sampleId/download')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
   async downloadBySample(
     @Param('sampleId') sampleId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -69,7 +69,7 @@ export class CertificatesController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
   async findAll(@Query('sampleId') sampleId: string, @CurrentUser() user: AuthenticatedUser) {
     if (!sampleId) {
       throw new BadRequestException('Informe sampleId.');
@@ -79,7 +79,7 @@ export class CertificatesController {
   }
 
   @Get(':id/download')
-  @Roles(Role.ADMIN, Role.MANAGER, Role.CLIENT)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
   async download(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -93,8 +93,10 @@ export class CertificatesController {
     stream.pipe(res);
   }
 
+  // Liberado pro Técnico a pedido do usuário (Opção A) — antes só
+  // ADMIN/MANAGER anexavam certificado manualmente.
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @Body() dto: CreateCertificateDto,
@@ -106,7 +108,7 @@ export class CertificatesController {
   }
 
   @Patch(':id/file')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   @UseInterceptors(FileInterceptor('file'))
   async replaceFile(
     @Param('id') id: string,
@@ -118,7 +120,7 @@ export class CertificatesController {
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async updateMetadata(
     @Param('id') id: string,
     @Body() dto: UpdateCertificateMetadataDto,
@@ -129,7 +131,7 @@ export class CertificatesController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     await this.deleteCertificateUseCase.execute(id, user);
