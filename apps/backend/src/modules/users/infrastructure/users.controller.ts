@@ -95,8 +95,14 @@ export class UsersController {
     return toUserDto(updated);
   }
 
+  // Técnico precisa da lista (só nome/id, sem gerenciar nada aqui — criar/
+  // editar/excluir continuam ADMIN só abaixo) pra colorir o Calendário por
+  // pessoa e ver os nomes no seletor de técnico ao confirmar um agendamento
+  // (ver technician-colors.ts, ConfirmDropModal, DayNoteModal) — sem essa
+  // rota, a lista vinha vazia e o calendário aparecia sem cor nenhuma pra
+  // qualquer Técnico.
   @Get()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async findAll() {
     const users = await this.listUsersUseCase.execute();
     return users.map(toUserDto);

@@ -62,22 +62,28 @@ export class SamplesController {
     return toSampleDto(sample);
   }
 
+  // Criar/editar/excluir amostra é o passo inicial do trabalho de campo do
+  // Técnico (registrar a coleta pra depois anexar a cadeia de custódia via
+  // custody-extractions, que já é liberado pra ele) — sem isso ele nem
+  // conseguia começar. Lançar resultado final (@Put ':id/results' abaixo)
+  // continua ADMIN/MANAGER só, por enquanto (trabalho de laboratório/QA,
+  // não de campo — revisar se o usuário quiser estender também).
   @Post()
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async create(@Body() dto: CreateSampleDto) {
     const sample = await this.createSampleUseCase.execute(dto);
     return toSampleDto(sample);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async update(@Param('id') id: string, @Body() dto: UpdateSampleDto) {
     const sample = await this.updateSampleUseCase.execute(id, dto);
     return toSampleDto(sample);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async remove(@Param('id') id: string) {
     const sample = await this.deactivateSampleUseCase.execute(id);
     return toSampleDto(sample);
