@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AuthenticatedUser } from '@portal-alvim/shared';
 import { assertOwnership } from '../../../../common/utils/scope.util';
+import { PrismaService } from '../../../../prisma/prisma.service';
 import { SAMPLE_REPOSITORY, SampleRepository } from '../../../samples/domain/sample.repository';
 import { CustodyFieldTemplatesService } from '../../infrastructure/custody-field-templates.service';
 import {
@@ -8,6 +9,7 @@ import {
   CustodyExtractionRepository,
 } from '../../domain/custody-extraction.repository';
 import { assertNoActiveCustodyExtraction } from '../assert-no-active-custody-extraction.util';
+import { buildClientDerivedFields } from '../client-derived-fields.util';
 
 // Caminho alternativo ao upload+IA: técnico preenche os campos direto na
 // tela de conferência, sem escaneado nenhum — cria a extração já em
@@ -19,6 +21,7 @@ export class CreateManualCustodyExtractionUseCase {
     private readonly custodyExtractionRepository: CustodyExtractionRepository,
     @Inject(SAMPLE_REPOSITORY) private readonly sampleRepository: SampleRepository,
     private readonly custodyFieldTemplatesService: CustodyFieldTemplatesService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(sampleId: string, user: AuthenticatedUser) {
@@ -44,6 +47,16 @@ export class CreateManualCustodyExtractionUseCase {
     const existing = await this.custodyExtractionRepository.findManyBySampleId(sampleId);
     assertNoActiveCustodyExtraction(existing);
 
-    return this.custodyExtractionRepository.createManual({ sampleId, templateId: template.id });
+    // Empresa/Endereço vêm do cadastro do cliente — já entram preenchidos,
+    // sem exigir digitação (ver buildClientDerivedFields).
+    const client = await this.prisma.client.findUniqueOrThrow({
+      where: { id: sample.clientId },
+      select: { companyName: true, address: true, city: true, state: true },
+    });
+
+    return this.custodyExtractionRepository.createManual(
+      { sampleId, templateId: template.id },
+      buildClientDerivedFields(client),
+    );
   }
 }

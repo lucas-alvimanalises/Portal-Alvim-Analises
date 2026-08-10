@@ -61,13 +61,13 @@ export class PrismaCustodyExtractionRepository implements CustodyExtractionRepos
     });
   }
 
-  createManual(data: CreateCustodyExtractionData) {
+  createManual(data: CreateCustodyExtractionData, initialFields?: Record<string, unknown>) {
     return this.prisma.custodyExtraction.create({
       data: {
         sampleId: data.sampleId,
         templateId: data.templateId,
         status: 'NEEDS_REVIEW',
-        extractedData: { fields: {}, table: {} } as Prisma.InputJsonValue,
+        extractedData: { fields: initialFields ?? {}, table: {} } as Prisma.InputJsonValue,
       },
       include: INCLUDE_RELATIONS,
     });

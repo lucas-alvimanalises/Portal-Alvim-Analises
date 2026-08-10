@@ -1,7 +1,7 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
-import { CustodyExtractedData, CustodyTemplateSchema } from '@portal-alvim/shared';
+import { CLIENT_DERIVED_CUSTODY_FIELD_KEYS, CustodyExtractedData, CustodyTemplateSchema } from '@portal-alvim/shared';
 import { AppConfig } from '../../../config/configuration';
 
 export interface ScanFile {
@@ -12,11 +12,15 @@ export interface ScanFile {
 const MODEL = 'claude-sonnet-5';
 
 function buildPrompt(schema: CustodyTemplateSchema): string {
-  // Campos fixos (Metodologia, Procedimento Interno, ...) e o número de
-  // relatório (atribuído pelo backend na aprovação) não são perguntados à
-  // IA — já têm valor certo sem depender de leitura de imagem.
+  // Campos fixos (Metodologia, Procedimento Interno, ...), o número de
+  // relatório (atribuído pelo backend na aprovação) e Empresa/Endereço (já
+  // conhecidos pelo agendamento — ver buildClientDerivedFields) não são
+  // perguntados à IA — já têm valor certo sem depender de leitura de imagem.
   const readableFields = schema.fields.filter(
-    (field) => field.fixedValue === undefined && !field.systemGenerated,
+    (field) =>
+      field.fixedValue === undefined &&
+      !field.systemGenerated &&
+      !(CLIENT_DERIVED_CUSTODY_FIELD_KEYS as readonly string[]).includes(field.key),
   );
   const fieldList = readableFields
     .map((field) => `- "${field.key}": ${field.label}${field.required ? ' (obrigatório)' : ''}`)

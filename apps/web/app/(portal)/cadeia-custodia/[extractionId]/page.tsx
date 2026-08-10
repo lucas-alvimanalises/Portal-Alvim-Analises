@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CustodyExtractedData, CustodyExtractedValue } from '@portal-alvim/shared';
+import { CLIENT_DERIVED_CUSTODY_FIELD_KEYS, CustodyExtractedData, CustodyExtractedValue } from '@portal-alvim/shared';
 import { custodyExtractionsApi } from '../../../../lib/api/custody-extractions.api';
 import { custodyDocumentsApi } from '../../../../lib/api/custody-documents.api';
 import { servicePhotosApi } from '../../../../lib/api/service-photos.api';
@@ -174,10 +174,14 @@ export default function CadeiaDeCustodiaRevisaoPage() {
 
           <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {schema.fields.map((field) => {
-              // Campos fixos (Metodologia, Procedimento Interno, ...) e o
-              // número de relatório não são lidos pela IA nem editáveis
-              // aqui — o valor certo é aplicado automaticamente na aprovação.
-              if (field.fixedValue !== undefined || field.systemGenerated) {
+              // Campos fixos (Metodologia, Procedimento Interno, ...), o
+              // número de relatório e Empresa/Endereço (vêm do cadastro do
+              // cliente — ver CLIENT_DERIVED_CUSTODY_FIELD_KEYS) não são
+              // lidos pela IA nem editáveis aqui.
+              const isClientDerivedField = (CLIENT_DERIVED_CUSTODY_FIELD_KEYS as readonly string[]).includes(
+                field.key,
+              );
+              if (field.fixedValue !== undefined || field.systemGenerated || isClientDerivedField) {
                 const isSignatureField = field.key === schema.signatureFieldKey;
                 return (
                   <div className="field" key={field.key}>
@@ -187,7 +191,9 @@ export default function CadeiaDeCustodiaRevisaoPage() {
                         ? 'Atribuído automaticamente na aprovação'
                         : isSignatureField
                           ? 'Assinatura digital de quem aprovar será inserida automaticamente'
-                          : field.fixedValue || '—'}
+                          : isClientDerivedField
+                            ? fields[field.key]?.value || 'Preenchido automaticamente a partir do cadastro da empresa'
+                            : field.fixedValue || '—'}
                     </p>
                   </div>
                 );

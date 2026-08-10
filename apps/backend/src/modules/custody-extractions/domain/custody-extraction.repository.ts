@@ -1,5 +1,5 @@
 import { CustodyExtraction, CustodyExtractionStatus } from '@prisma/client';
-import { CustodyExtractedData } from '@portal-alvim/shared';
+import { CustodyExtractedData, CustodyExtractedValue } from '@portal-alvim/shared';
 
 export interface CreateCustodyExtractionData {
   sampleId: string;
@@ -42,9 +42,14 @@ export interface CustodyExtractionRepository {
     data: CreateCustodyExtractionData,
     file: UploadedFileData,
   ): Promise<CustodyExtractionWithRelations>;
-  // Sem digitalização/IA — cria já em NEEDS_REVIEW com os campos em branco,
-  // pro técnico preencher direto na tela de conferência.
-  createManual(data: CreateCustodyExtractionData): Promise<CustodyExtractionWithRelations>;
+  // Sem digitalização/IA — cria já em NEEDS_REVIEW com os campos em branco
+  // (exceto os pré-preenchidos em initialFields, ex.: Empresa/Endereço do
+  // cliente — ver buildClientDerivedFields), pro técnico preencher o resto
+  // direto na tela de conferência.
+  createManual(
+    data: CreateCustodyExtractionData,
+    initialFields?: Record<string, CustodyExtractedValue>,
+  ): Promise<CustodyExtractionWithRelations>;
   updateResult(
     id: string,
     data: UpdateCustodyExtractionResultData,
