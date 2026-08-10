@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../lib/auth/AuthContext';
+
+// require() em vez de import — padrão do Metro bundler pra imagens estáticas
+// (React Native/Expo não tem declaração de tipo pra módulos .jpg por
+// padrão, diferente do Next.js no portal web).
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const logo = require('../../assets/logo.jpg');
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -23,6 +29,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <Image source={logo} style={styles.logo} resizeMode="contain" />
       <Text style={styles.title}>Portal Alvim Análises</Text>
       <Text style={styles.subtitle}>Entre com suas credenciais.</Text>
 
@@ -53,8 +60,9 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#f5f6f8' },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-  subtitle: { fontSize: 14, color: '#6b7280', marginBottom: 24 },
+  logo: { width: '100%', height: 140, alignSelf: 'center', marginBottom: 16 },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: 4, textAlign: 'center' },
+  subtitle: { fontSize: 14, color: '#6b7280', marginBottom: 24, textAlign: 'center' },
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
