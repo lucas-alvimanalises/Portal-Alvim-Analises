@@ -6,4 +6,8 @@ export const schedulesApi = {
     const { data } = await apiClient.get<ScheduleDto[]>('/schedules');
     return data;
   },
+  get: async (id: string) => {
+    const { data } = await apiClient.get<ScheduleDto>(`/schedules/${id}`);
+    return data;
+  },
 };
