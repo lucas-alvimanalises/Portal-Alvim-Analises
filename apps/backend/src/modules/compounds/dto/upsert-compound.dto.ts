@@ -6,6 +6,10 @@ export class CreateCompoundDto {
 
   @IsString()
   name!: string;
+
+  @IsOptional()
+  @IsString()
+  samplerType?: string;
 }
 
 export class UpdateCompoundDto {
@@ -20,4 +24,8 @@ export class UpdateCompoundDto {
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @IsOptional()
+  @IsString()
+  samplerType?: string;
 }

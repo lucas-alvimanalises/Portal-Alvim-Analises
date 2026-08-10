@@ -106,6 +106,16 @@ export const NAV_ITEMS: NavItem[] = [
         href: '/agenda/organizar-servico',
         roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN],
       },
+      // Quadro de planejamento: soma "Qtd. amostras" por tipo de composto
+      // entre todos os agendamentos ainda não realizados de um mês — pra
+      // saber quantos amostradores pedir ao laboratório. Só leitura/
+      // agregação, sem endpoint próprio (reaproveita GET /schedules já
+      // usado no Calendário — ver /agenda/cronograma-amostras/page.tsx).
+      {
+        label: 'Cronograma de Amostras',
+        href: '/agenda/cronograma-amostras',
+        roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN],
+      },
     ],
   },
 ];

@@ -4,4 +4,8 @@ export interface CompoundDto {
   code: string;
   name: string;
   active: boolean;
+  // Tipo de amostrador físico correspondente (ex.: "Bag Tedlar", "Frasco
+  // âmbar 500ml") — preparação de dado pra uma fase futura de solicitação
+  // de amostradores ao laboratório, ainda sem fluxo nenhum usando isso.
+  samplerType: string | null;
 }

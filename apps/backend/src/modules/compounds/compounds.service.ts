@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 export interface UpsertCompoundData {
   code: string;
   name: string;
+  samplerType?: string;
 }
 
 // Lookup simples (mesmo padrão de ServiceTypesService): compostos analisáveis

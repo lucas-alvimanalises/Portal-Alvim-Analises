@@ -20,6 +20,7 @@ import {
   FileChartColumn,
   FileClock,
   FileText,
+  FlaskConical,
   LayoutDashboard,
   ListChecks,
   ClipboardList,
@@ -51,6 +52,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   Agenda: CalendarDays,
   Calendário: Calendar,
   'Organizar Serviço': ListChecks,
+  'Cronograma de Amostras': FlaskConical,
 };
 
 function isItemActive(item: NavItem, pathname: string): boolean {

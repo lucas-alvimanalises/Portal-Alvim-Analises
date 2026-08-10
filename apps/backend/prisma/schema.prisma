@@ -449,6 +449,12 @@ model Compound {
   name   String  @unique // ex.: "Siloxanos"
   active Boolean @default(true)
 
+  // Tipo de amostrador físico correspondente (ex.: "Bag Tedlar", "Frasco
+  // âmbar 500ml") — preparação de dado pra uma fase futura de solicitação
+  // de amostradores ao laboratório (ver spec Cronograma de Amostras); ainda
+  // sem nenhum fluxo usando este campo, só cadastro.
+  samplerType String?
+
   schedulePoints ScheduleSamplingPointCompound[]
   samples        Sample[]
   custodyDocuments CustodyDocument[]
