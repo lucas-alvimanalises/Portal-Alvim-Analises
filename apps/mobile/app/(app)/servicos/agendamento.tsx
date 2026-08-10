@@ -1,5 +1,5 @@
-import { FlatList, Text, View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Stack } from 'expo-router';
+import { FlatList, Text, View, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import {
   isScheduleRealized,
@@ -31,6 +31,7 @@ function formatPeriodo(schedule: ScheduleDto): string {
 }
 
 export default function AgendamentoScreen() {
+  const router = useRouter();
   const { data, isLoading } = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.list });
 
   const schedules = (data ?? [])
@@ -56,7 +57,7 @@ export default function AgendamentoScreen() {
         renderItem={({ item }) => {
           const colors = SCHEDULE_DERIVED_STATUS_COLORS[item.derivedStatus];
           return (
-            <View style={styles.card}>
+            <Pressable style={styles.card} onPress={() => router.push(`/servicos/${item.id}` as never)}>
               <Text style={styles.client}>{item.clientName ?? '-'}</Text>
               <Text style={styles.meta}>{item.serviceTypeName ?? '-'}</Text>
               <Text style={styles.meta}>{formatPeriodo(item)}</Text>
@@ -65,7 +66,7 @@ export default function AgendamentoScreen() {
                   {SCHEDULE_DERIVED_STATUS_LABELS_PT[item.derivedStatus]}
                 </Text>
               </View>
-            </View>
+            </Pressable>
           );
         }}
       />

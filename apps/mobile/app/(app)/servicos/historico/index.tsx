@@ -1,15 +1,18 @@
 import { FlatList, Text, Pressable, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import { ClientStatus } from '@portal-alvim/shared';
 import { clientsApi } from '../../../../lib/api/clients.api';
 
-// Nível 1 do Histórico (mesmo espírito do portal web): lista de empresas —
+// Nível 1 do Histórico (mesmo espírito do portal web — ver historico/page.tsx
+// no web, que já filtra por status === ACTIVE): lista de empresas ativas —
 // toca numa pra ver as amostras/resultados recentes daquele cliente. Versão
 // simplificada nesta fase: sem gráfico de tendência, só lista dos últimos
 // resultados lançados (ver [clientId].tsx).
 export default function HistoricoEmpresasScreen() {
   const router = useRouter();
-  const { data: clients, isLoading } = useQuery({ queryKey: ['clients'], queryFn: clientsApi.list });
+  const { data, isLoading } = useQuery({ queryKey: ['clients'], queryFn: clientsApi.list });
+  const clients = (data ?? []).filter((c) => c.status === ClientStatus.ACTIVE);
 
   if (isLoading) {
     return (

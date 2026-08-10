@@ -31,7 +31,14 @@
       "output": "single"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app acessa suas fotos para anexar imagens do serviço realizado.",
+          "cameraPermission": "O app usa a câmera para fotografar o serviço realizado."
+        }
+      ]
     ],
     "extra": {
       "router": {

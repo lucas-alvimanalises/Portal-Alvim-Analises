@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { tokenStorage } from '../auth/storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001/api';
 
 export const apiClient = axios.create({ baseURL: API_URL });
 
