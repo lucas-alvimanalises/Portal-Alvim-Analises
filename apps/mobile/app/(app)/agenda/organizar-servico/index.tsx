@@ -32,9 +32,9 @@ function ScheduleRow({ schedule, onPress }: { schedule: ScheduleDto; onPress: ()
 }
 
 // Espelha /agenda/organizar-servico do portal web: escolher um serviço pra
-// ver o que precisa ser levado a campo (pontos/compostos). As ferramentas de
-// impressão (etiquetas, cadeia de custódia em branco, checklist) continuam
-// só no portal web nesta fase — ver [id].tsx.
+// ver o que precisa ser levado a campo (pontos/compostos), baixar a cadeia
+// de custódia em branco e preencher o check list — ver [id].tsx. Só
+// impressão de etiqueta Zebra continua exclusiva do portal web.
 export default function OrganizarServicoListScreen() {
   const router = useRouter();
   const [showPrevious, setShowPrevious] = useState(false);

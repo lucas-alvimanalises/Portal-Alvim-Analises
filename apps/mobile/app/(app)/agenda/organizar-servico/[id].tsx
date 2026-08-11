@@ -1,7 +1,12 @@
-import { ScrollView, Text, View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
+import { ScrollView, Text, View, StyleSheet, ActivityIndicator, Pressable, Alert } from 'react-native';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { schedulesApi } from '../../../../lib/api/schedules.api';
+import { API_URL } from '../../../../lib/api/client';
+import { tokenStorage } from '../../../../lib/auth/storage';
 
 function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfirmed: boolean): string {
   if (!dateConfirmed) {
@@ -12,18 +17,49 @@ function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfir
   return `${start} a ${new Date(endDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`;
 }
 
-// Detalhe somente leitura do serviço — pontos e compostos a levar a campo.
-// As ferramentas de impressão de etiqueta/cadeia de custódia em branco/
-// checklist (que geram PDF/etiqueta física) continuam só no portal web por
-// enquanto: abrir no navegador do celular funciona igual, só não tem uma
-// tela nativa dedicada ainda.
+// Detalhe do serviço com as ferramentas de campo: baixar/compartilhar a
+// cadeia de custódia em branco (pra imprimir onde der, ou levar aberta no
+// celular) e preencher o check list de material. Impressão de etiqueta
+// Zebra continua só no portal web — a impressora fica ligada num
+// computador do escritório, não faz sentido operar via celular (decisão
+// tomada com o usuário).
 export default function OrganizarServicoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const [downloadingCustody, setDownloadingCustody] = useState(false);
+
   const { data: schedule, isLoading } = useQuery({
     queryKey: ['schedules', id],
     queryFn: () => schedulesApi.get(id),
     enabled: !!id,
   });
+
+  async function downloadAndShareCustodyPdf() {
+    setDownloadingCustody(true);
+    try {
+      const token = await tokenStorage.getAccessToken();
+      const fileUri = `${FileSystem.cacheDirectory}cadeia-custodia-${id}.pdf`;
+      const result = await FileSystem.downloadAsync(`${API_URL}/custody-extractions/blank/${id}`, fileUri, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (result.status !== 200) {
+        throw new Error(`status ${result.status}`);
+      }
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(result.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Cadeia de Custódia em branco',
+        });
+      } else {
+        Alert.alert('Baixado', `PDF salvo em ${result.uri}, mas este dispositivo não suporta compartilhar/abrir direto.`);
+      }
+    } catch {
+      Alert.alert('Erro', 'Não foi possível baixar a cadeia de custódia. Tente novamente.');
+    } finally {
+      setDownloadingCustody(false);
+    }
+  }
 
   if (isLoading || !schedule) {
     return (
@@ -48,6 +84,24 @@ export default function OrganizarServicoDetailScreen() {
           </Text>
         </View>
 
+        <View style={styles.card}>
+          <Pressable
+            style={styles.actionButton}
+            onPress={downloadAndShareCustodyPdf}
+            disabled={downloadingCustody}
+          >
+            <Text style={styles.actionButtonText}>
+              {downloadingCustody ? 'Baixando...' : 'Cadeia de Custódia (baixar/compartilhar)'}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => router.push(`/agenda/organizar-servico/${id}/checklist` as never)}
+          >
+            <Text style={styles.actionButtonText}>Preencher Check List de Campo</Text>
+          </Pressable>
+        </View>
+
         {schedule.samplingPoints.map((point) => (
           <View key={point.samplingPointId} style={styles.card}>
             <Text style={styles.pointTitle}>{point.samplingPointName ?? 'Ponto'}</Text>
@@ -63,8 +117,7 @@ export default function OrganizarServicoDetailScreen() {
         ))}
 
         <Text style={styles.note}>
-          Etiquetas, cadeia de custódia em branco e checklist de campo: abra este serviço no
-          portal web pra imprimir/preencher.
+          Etiquetas (Zebra ZD-220): continuam só no portal web, no computador ligado à impressora.
         </Text>
       </ScrollView>
     </>
@@ -94,5 +147,12 @@ const styles = StyleSheet.create({
   },
   compoundName: { fontSize: 13, color: '#1f2937' },
   compoundQty: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  note: { fontSize: 12, color: '#9ca3af', textAlign: 'center', marginTop: 8 },
+  note: { fontSize: 12, color: '#9ca3af', textAlign: 'center', marginTop: 4 },
+  actionButton: {
+    backgroundColor: '#1f5f4d',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
 });
