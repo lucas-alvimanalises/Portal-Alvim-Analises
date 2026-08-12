@@ -85,25 +85,67 @@ function formatPontos(schedule: ScheduleDto): string {
 // todos os grupos de compostos entre parênteses, ex.: "1º Barreira
 // (Siloxanos, VOCs, BTEX); 2º Barreira (...)") — ficava denso, quebrava em
 // 3+ linhas e era difícil de escanear (ver especificação de consistência
-// visual). Os grupos de compostos continuam disponíveis em "Resultados" do
-// serviço; aqui só a contagem aparece, como um contador discreto ao lado do
-// nome do ponto.
+// visual). Por padrão só a contagem aparece, discreta ao lado do nome do
+// ponto — clicar no badge expande a lista de compostos/quantidades daquele
+// ponto numa linha logo abaixo (mesmo padrão "recolhido por padrão, expande
+// ao clicar" já usado em Histórico). Sem isso o CLIENT não tinha nenhum jeito
+// de ver o que vai ser coletado num serviço ainda não realizado (pedido do
+// usuário) — a equipe Alvim tinha esse detalhe em Organizar Serviço, mas o
+// cliente não enxerga essa tela.
 function PontosBadges({ schedule }: { schedule: ScheduleDto }) {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   if (schedule.samplingPoints.length === 0) return <>-</>;
+
+  const expandedPoint = expandedIndex !== null ? schedule.samplingPoints[expandedIndex] : undefined;
+
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-      {schedule.samplingPoints.map((sp, index) => (
-        <span
-          key={index}
-          className="badge"
-          style={{ background: 'var(--color-surface-muted, #f1f5f9)', color: 'var(--color-text)' }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {schedule.samplingPoints.map((sp, index) => {
+          const hasCompounds = sp.compounds.length > 0;
+          const isExpanded = expandedIndex === index;
+          return (
+            <button
+              key={index}
+              type="button"
+              className="badge"
+              disabled={!hasCompounds}
+              onClick={() => setExpandedIndex((current) => (current === index ? null : index))}
+              style={{
+                border: 'none',
+                font: 'inherit',
+                cursor: hasCompounds ? 'pointer' : 'default',
+                background: isExpanded ? 'var(--color-primary)' : 'var(--color-surface-muted, #f1f5f9)',
+                color: isExpanded ? '#fff' : 'var(--color-text)',
+              }}
+              title={hasCompounds ? 'Ver compostos deste ponto' : undefined}
+            >
+              {sp.samplingPointName}
+              {hasCompounds && (
+                <span style={{ color: isExpanded ? '#fff' : 'var(--color-text-muted)' }}>
+                  {' '}
+                  · {sp.compounds.length}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {expandedPoint && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--color-text-muted)',
+            background: 'var(--color-surface-muted, #f1f5f9)',
+            borderRadius: 6,
+            padding: '4px 8px',
+          }}
         >
-          {sp.samplingPointName}
-          {sp.compounds.length > 0 && (
-            <span style={{ color: 'var(--color-text-muted)' }}> · {sp.compounds.length}</span>
-          )}
-        </span>
-      ))}
+          {expandedPoint.compounds
+            .map((c) => (c.quantity > 1 ? `${c.name} x${c.quantity}` : c.name))
+            .join(', ')}
+        </div>
+      )}
     </div>
   );
 }
