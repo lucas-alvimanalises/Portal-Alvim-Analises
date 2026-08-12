@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
 import { JwtAccessGuard } from './common/guards/jwt-access.guard';
@@ -33,6 +34,11 @@ import { ServiceResultsSummaryModule } from './modules/service-results-summary/s
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    // Teto geral generoso (uso normal do portal, por IP) — as rotas
+    // sensíveis a força bruta (login, esqueci/redefinir senha) têm um limite
+    // bem mais estrito via @Throttle() direto no controller (ver
+    // AuthController), sobrepondo este default.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -63,6 +69,8 @@ import { ServiceResultsSummaryModule } from './modules/service-results-summary/s
   providers: [
     // Guard global: exige JWT válido em toda rota, exceto as marcadas @Public().
     { provide: APP_GUARD, useClass: JwtAccessGuard },
+    // Guard global de rate limit (ver ThrottlerModule.forRoot acima).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

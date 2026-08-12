@@ -24,6 +24,28 @@ export class ForgotPasswordUseCase {
   ) {}
 
   async execute(email: string): Promise<void> {
+    // E-mail inexistente responde na hora; e-mail existente faz transação +
+    // envia e-mail antes de responder — sem isso, a diferença de tempo de
+    // resposta dava pra descobrir quais e-mails estão cadastrados mesmo com
+    // as duas respostas sendo idênticas (achado de auditoria). `finally`
+    // sempre espera até o piso mínimo, os dois caminhos incluído.
+    const startedAt = Date.now();
+    try {
+      await this.doExecute(email);
+    } finally {
+      await this.padToMinimumDuration(startedAt);
+    }
+  }
+
+  private async padToMinimumDuration(startedAt: number): Promise<void> {
+    const MIN_DURATION_MS = 300;
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < MIN_DURATION_MS) {
+      await new Promise((resolve) => setTimeout(resolve, MIN_DURATION_MS - elapsed));
+    }
+  }
+
+  private async doExecute(email: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.active) {
       return;

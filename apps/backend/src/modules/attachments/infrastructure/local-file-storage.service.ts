@@ -3,8 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { createReadStream } from 'fs';
 import { access, mkdir, rm, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { basename, join } from 'path';
 import { AppConfig } from '../../../config/configuration';
+import { sanitizeFilename } from '../../../common/utils/filename.util';
 import {
   FileStorageService,
   UploadFileInput,
@@ -22,7 +23,15 @@ export class LocalFileStorageService implements FileStorageService {
 
   async upload(input: UploadFileInput): Promise<UploadFileResult> {
     await mkdir(this.basePath, { recursive: true });
-    const storageKey = `${randomUUID()}-${input.filename}`;
+    // input.filename vem direto do upload (Multer file.originalname) — nunca
+    // confiar nele sem tratar: basename() descarta qualquer componente de
+    // diretório (inclusive "../../etc/passwd") e sanitizeFilename() troca os
+    // caracteres restantes que ainda poderiam confundir o path (barra
+    // invertida, dois-pontos, etc.) por espaço. Sem isso, um nome de arquivo
+    // malicioso conseguia escapar de basePath e escrever em qualquer lugar
+    // que o processo tivesse permissão (falha real, achada em auditoria).
+    const safeFilename = sanitizeFilename(basename(input.filename)) || 'arquivo';
+    const storageKey = `${randomUUID()}-${safeFilename}`;
     await writeFile(join(this.basePath, storageKey), input.buffer);
     return { storageKey, sizeBytes: input.buffer.byteLength };
   }

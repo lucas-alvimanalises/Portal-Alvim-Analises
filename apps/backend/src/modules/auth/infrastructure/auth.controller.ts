@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthenticatedUser } from '@portal-alvim/shared';
 import { Public } from '../../../common/decorators/public.decorator';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
@@ -22,7 +23,12 @@ export class AuthController {
     private readonly resetPasswordUseCase: ResetPasswordUseCase,
   ) {}
 
+  // Rota pública sem senha nenhuma pra travar tentativa antes — limite de
+  // força bruta por IP é a única defesa aqui (achado de auditoria: não havia
+  // nenhum antes). 5 tentativas/minuto é folgado pra alguém errando a senha
+  // de verdade, mas trava um ataque automatizado.
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   login(@Body() dto: LoginDto) {
@@ -50,6 +56,7 @@ export class AuthController {
   // Sempre responde com a mesma mensagem genérica, exista ou não o e-mail —
   // ver ForgotPasswordUseCase para o porquê.
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -60,6 +67,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
