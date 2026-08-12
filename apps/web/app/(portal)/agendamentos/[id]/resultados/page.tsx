@@ -255,6 +255,9 @@ export default function ResultadosAnaliticosPage() {
                       totalSlots={totalSlots}
                       sample={existing[index]}
                       defaultCollectionDate={schedule.scheduledDate.slice(0, 10)}
+                      scheduledDate={schedule.scheduledDate}
+                      endDate={schedule.endDate}
+                      dateConfirmed={schedule.dateConfirmed}
                       selected={existing[index] ? selectedSampleIds.has(existing[index].id) : false}
                       onToggleSelect={
                         existing[index] ? () => toggleSampleSelection(existing[index].id) : undefined
@@ -266,12 +269,18 @@ export default function ResultadosAnaliticosPage() {
             </div>
           ))}
 
-          {unmatchedSamples.length > 0 && (
+          {unmatchedSamples.length > 0 && schedule && (
             <div>
               <h2 style={{ fontSize: 16, marginBottom: 8 }}>Outras análises</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {unmatchedSamples.map((sample) => (
-                  <SampleResultCard key={sample.id} sample={sample} />
+                  <SampleResultCard
+                    key={sample.id}
+                    sample={sample}
+                    scheduledDate={schedule.scheduledDate}
+                    endDate={schedule.endDate}
+                    dateConfirmed={schedule.dateConfirmed}
+                  />
                 ))}
               </div>
             </div>

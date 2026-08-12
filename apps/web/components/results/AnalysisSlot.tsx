@@ -17,6 +17,9 @@ interface AnalysisSlotProps {
   totalSlots: number;
   sample?: SampleDto;
   defaultCollectionDate: string;
+  scheduledDate: string;
+  endDate: string | null;
+  dateConfirmed: boolean;
   // Checkbox de seleção pro download em lote (cadeia de custódia/
   // certificado) — só faz sentido quando já existe amostra (ver
   // ResultadosAnaliticosPage).
@@ -39,6 +42,9 @@ export function AnalysisSlot({
   totalSlots,
   sample,
   defaultCollectionDate,
+  scheduledDate,
+  endDate,
+  dateConfirmed,
   selected,
   onToggleSelect,
 }: AnalysisSlotProps) {
@@ -124,7 +130,12 @@ export function AnalysisSlot({
         <div style={{ padding: '0 12px 12px', borderTop: '1px solid var(--color-border)' }}>
           {sample ? (
             <div style={{ marginTop: 12 }}>
-              <SampleResultCard sample={sample} />
+              <SampleResultCard
+                sample={sample}
+                scheduledDate={scheduledDate}
+                endDate={endDate}
+                dateConfirmed={dateConfirmed}
+              />
             </div>
           ) : (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>

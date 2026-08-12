@@ -13,6 +13,52 @@ import { CustodyExtractionSection } from './CustodyExtractionSection';
 
 interface SampleResultCardProps {
   sample: SampleDto;
+  // Data do agendamento (não da amostra) — só pra comparar contra a data de
+  // coleta e avisar quando destoam (ver collectionDateMismatchMessage). Raiz de
+  // um bug real: a data de coleta só copia a data do agendamento no momento
+  // em que a amostra é criada — se o agendamento ainda não estava confirmado
+  // (ou foi reagendado depois), a amostra fica com uma data desatualizada e
+  // isso só aparecia semanas depois, no Reporte Mensal ANP, sem nenhum aviso
+  // na tela onde o dado é editado. Opcional porque o Histórico reaproveita
+  // este card fora do contexto de um agendamento específico (amostras de
+  // vários meses/agendamentos na mesma lista) — sem essas props, o aviso
+  // simplesmente não é calculado ali.
+  scheduledDate?: string;
+  endDate?: string | null;
+  dateConfirmed?: boolean;
+}
+
+// Confirmado: compara contra o intervalo exato (scheduledDate..endDate).
+// Não confirmado (só "mês previsto"): compara só ano/mês, já que não há um
+// dia exato pra bater. `scheduledDate` ausente (Histórico, fora do contexto
+// de um agendamento) = nunca avisa.
+function collectionDateMismatchMessage(
+  collectionDate: string,
+  scheduledDate: string | undefined,
+  endDate: string | null | undefined,
+  dateConfirmed: boolean | undefined,
+): string | null {
+  if (scheduledDate === undefined) return null;
+
+  const confirmed = !!dateConfirmed;
+  const resolvedEnd = endDate ?? null;
+  const collected = collectionDate.slice(0, 10);
+  const mismatched = confirmed
+    ? collected < scheduledDate.slice(0, 10) || collected > (resolvedEnd ?? scheduledDate).slice(0, 10)
+    : collected.slice(0, 7) !== scheduledDate.slice(0, 7);
+  if (!mismatched) return null;
+
+  const period = confirmed
+    ? formatConfirmedPeriod(scheduledDate, resolvedEnd)
+    : new Date(scheduledDate).toLocaleDateString('pt-BR', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+
+  return `Data de coleta fora do ${confirmed ? 'período' : 'mês'} esperado do agendamento (${period}). Isso pode fazer a amostra não aparecer nos relatórios do mês certo (ex.: Reportes Mensais ANP) — confira e corrija se estiver errada.`;
+}
+
+function formatConfirmedPeriod(scheduledDate: string, endDate: string | null): string {
+  const start = new Date(scheduledDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  if (!endDate || endDate === scheduledDate) return start;
+  return `${start} a ${new Date(endDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}`;
 }
 
 // Extrai o nº do relatório de campo do nome do PDF gerado (ex.:
@@ -33,10 +79,11 @@ function reportNumberFromFilename(filename: string): string | null {
 // Cliente só visualiza: não gera cadeia de custódia, não anexa certificado
 // nem edita resultado algum — só baixa o que já foi anexado (ver readOnly
 // abaixo).
-export function SampleResultCard({ sample }: SampleResultCardProps) {
+export function SampleResultCard({ sample, scheduledDate, endDate, dateConfirmed }: SampleResultCardProps) {
   const queryClient = useQueryClient();
   const [sampleCode, setSampleCode] = useState(sample.sampleCode ?? '');
   const [collectionDate, setCollectionDate] = useState(sample.collectionDate.slice(0, 10));
+  const dateMismatchMessage = collectionDateMismatchMessage(collectionDate, scheduledDate, endDate, dateConfirmed);
 
   const { data: me } = useCurrentUser();
   const isClient = me?.role === Role.CLIENT;
@@ -124,6 +171,20 @@ export function SampleResultCard({ sample }: SampleResultCardProps) {
             ))}
         </div>
       </div>
+
+      {!isClient && dateMismatchMessage && (
+        <div
+          style={{
+            background: '#fef9c3',
+            color: '#854d0e',
+            fontSize: 12,
+            padding: '6px 10px',
+            borderRadius: 6,
+          }}
+        >
+          ⚠ {dateMismatchMessage}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div className="field" style={{ flex: 1, minWidth: 140 }}>
