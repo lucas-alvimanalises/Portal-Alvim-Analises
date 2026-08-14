@@ -21,7 +21,10 @@ export function toScheduleDto(
     scheduledDate: schedule.scheduledDate.toISOString(),
     endDate: schedule.endDate?.toISOString() ?? null,
     dateConfirmed: schedule.dateConfirmed,
-    technicians: schedule.technicians?.map((t) => t.technician) ?? [],
+    // Campo a campo, não o objeto inteiro: schedule.technicians[].technician
+    // carrega email/active/emailNotifications só pro envio de e-mail interno
+    // (ver SendScheduleToClientUseCase) — nunca deve vazar no DTO público.
+    technicians: schedule.technicians?.map((t) => ({ id: t.technician.id, name: t.technician.name })) ?? [],
     samplingPoints:
       schedule.samplingPoints?.map((sp) => ({
         samplingPointId: sp.samplingPoint.id,

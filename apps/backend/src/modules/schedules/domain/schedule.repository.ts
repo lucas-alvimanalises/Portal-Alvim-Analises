@@ -33,7 +33,13 @@ export interface UpdateScheduleCommentsData {
 export type ScheduleWithRelations = Schedule & {
   client?: { companyName: string } | null;
   serviceType?: { name: string } | null;
-  technicians?: { technician: { id: string; name: string } }[];
+  // email/active/emailNotifications só existem aqui pro envio de e-mail ao
+  // técnico responsável (ver SendScheduleToClientUseCase) — nunca vazam pro
+  // DTO público (schedule.mapper.ts mapeia campo a campo, não espalha o
+  // objeto inteiro, de propósito).
+  technicians?: {
+    technician: { id: string; name: string; email: string; active: boolean; emailNotifications: boolean };
+  }[];
   samplingPoints?: {
     samplingPoint: { id: string; name: string };
     compounds: { quantity: number; compound: { id: string; code: string; name: string } }[];

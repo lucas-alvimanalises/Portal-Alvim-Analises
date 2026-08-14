@@ -38,16 +38,28 @@ export class SendScheduleToClientUseCase {
       this.userRepository.findEmailRecipientsForInternalStaff(),
     ]);
 
+    // Técnico(s) responsável(is) por ESTE agendamento — findEmailRecipientsForInternalStaff()
+    // só cobre ADMIN/MANAGER, então sem isso o técnico alocado nunca era
+    // avisado do serviço (pedido do usuário). Já vem carregado em
+    // schedule.technicians (ver ScheduleWithRelations); mesmo respeito à
+    // preferência de notificação e a contas desativadas que os outros grupos.
+    const technicianEmails = (schedule.technicians ?? [])
+      .map((t) => t.technician)
+      .filter((technician) => technician.active && technician.emailNotifications)
+      .map((technician) => technician.email);
+
     // Dedupe por e-mail (papéis diferentes não deveriam colidir, mas evita
-    // envio duplicado se algum endereço aparecer nos dois grupos).
+    // envio duplicado se algum endereço aparecer em mais de um grupo).
+    const allRecipients = [...clientRecipients, ...internalRecipients];
     const recipientEmails = Array.from(
-      new Set([...clientRecipients, ...internalRecipients].map((recipient) => recipient.email)),
+      new Set([...allRecipients.map((r) => r.email), ...technicianEmails]),
     );
 
     if (recipientEmails.length === 0) {
       throw new BadRequestException(
         'Nenhum destinatário está cadastrado para receber notificações por e-mail. ' +
-          'Verifique se há usuários com papel Cliente vinculados a esta empresa, ou Administrador/Gestor, com a opção de e-mail ativada.',
+          'Verifique se há usuários com papel Cliente vinculados a esta empresa, Administrador/Gestor, ' +
+          'ou técnico responsável alocado no agendamento, com a opção de e-mail ativada.',
       );
     }
 

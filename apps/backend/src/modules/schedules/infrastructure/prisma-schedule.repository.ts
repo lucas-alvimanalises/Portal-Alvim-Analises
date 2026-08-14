@@ -12,7 +12,14 @@ import {
 const INCLUDE_RELATIONS = {
   client: { select: { companyName: true } },
   serviceType: { select: { name: true } },
-  technicians: { include: { technician: { select: { id: true, name: true } } } },
+  // email/active/emailNotifications só usados internamente pro e-mail ao
+  // técnico responsável (ver ScheduleWithRelations/SendScheduleToClientUseCase)
+  // — o mapper pro DTO público filtra de volta pra id+name só.
+  technicians: {
+    include: {
+      technician: { select: { id: true, name: true, email: true, active: true, emailNotifications: true } },
+    },
+  },
   samplingPoints: {
     include: {
       samplingPoint: { select: { id: true, name: true } },
