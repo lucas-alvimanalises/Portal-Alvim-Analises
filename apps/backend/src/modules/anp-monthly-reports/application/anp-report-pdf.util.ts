@@ -35,8 +35,11 @@ export interface AnpReportPdfInput {
 
 // Um campo "rótulo em cima (cinza, caixa alta) / valor embaixo (preto,
 // negrito)" — visual de formulário corporativo, mais fácil de escanear que
-// uma lista corrida de "Label: valor".
-function drawField(doc: jsPDF, x: number, y: number, label: string, value: string) {
+// uma lista corrida de "Label: valor". maxWidth quebra o valor em até 2
+// linhas (mesmo padrão de results-summary-pdf.util.ts) — sem isso, uma razão
+// social longa escrevia por cima do campo ao lado (achado real, ver captura
+// enviada pelo usuário): doc.text() sozinho nunca quebra linha.
+function drawField(doc: jsPDF, x: number, y: number, label: string, value: string, maxWidth = 220) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(130);
@@ -45,7 +48,8 @@ function drawField(doc: jsPDF, x: number, y: number, label: string, value: strin
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.setTextColor(30);
-  doc.text(value, x, y + 14);
+  const lines: string[] = doc.splitTextToSize(value, maxWidth).slice(0, 2);
+  lines.forEach((line, index) => doc.text(line, x, y + 14 + index * 13));
 }
 
 // Layout corporativo pra protocolo na ANP — mesmo esqueleto de

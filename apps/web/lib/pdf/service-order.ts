@@ -40,14 +40,20 @@ export async function generateServiceOrderPdf(schedule: ScheduleDto, client?: Cl
   const marginX = 40;
   let y = 50;
 
+  const logoWidth = 150;
   try {
     const logoDataUrl = await loadImageAsDataUrl('/logo.jpg');
-    const logoWidth = 150;
     const logoHeight = 108;
     doc.addImage(logoDataUrl, 'JPEG', pageWidth - marginX - logoWidth, 24, logoWidth, logoHeight);
   } catch {
     // Segue sem o logo caso não carregue — não deve impedir a geração do PDF.
   }
+
+  // Largura máxima do bloco de dados (Cliente/CNPJ/Endereço/...) — sem isso
+  // um endereço ou razão social longos escreviam por cima da logo (achado
+  // real, ver captura enviada pelo usuário): doc.text() sozinho nunca quebra
+  // linha, só estoura pra direita.
+  const headerMaxWidth = pageWidth - marginX * 2 - logoWidth - 10;
 
   const referenceNumber = String(schedule.orderNumber).padStart(5, '0');
 
@@ -76,8 +82,11 @@ export async function generateServiceOrderPdf(schedule: ScheduleDto, client?: Cl
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   lines.forEach((line) => {
-    doc.text(line, marginX, y);
-    y += 16;
+    const wrappedLines = doc.splitTextToSize(line, headerMaxWidth) as string[];
+    wrappedLines.forEach((wrappedLine) => {
+      doc.text(wrappedLine, marginX, y);
+      y += 14;
+    });
   });
 
   y += 8;

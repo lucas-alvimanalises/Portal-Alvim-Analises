@@ -23,12 +23,18 @@ export function buildServiceOrderPdfBuffer(schedule: ScheduleWithRelations, clie
   const marginX = 40;
   let y = 50;
 
+  const logoWidth = 150;
   const logoBase64 = getLogoBase64();
   if (logoBase64) {
-    const logoWidth = 150;
     const logoHeight = 108;
     doc.addImage(logoBase64, 'JPEG', pageWidth - marginX - logoWidth, 24, logoWidth, logoHeight);
   }
+
+  // Largura máxima do bloco de dados (Cliente/CNPJ/Endereço/...) — sem isso
+  // um endereço ou razão social longos escreviam por cima da logo (achado
+  // real, ver captura enviada pelo usuário): doc.text() sozinho nunca quebra
+  // linha, só estoura pra direita.
+  const headerMaxWidth = pageWidth - marginX * 2 - logoWidth - 10;
 
   const referenceNumber = String(schedule.orderNumber).padStart(5, '0');
 
@@ -58,8 +64,11 @@ export function buildServiceOrderPdfBuffer(schedule: ScheduleWithRelations, clie
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   lines.forEach((line) => {
-    doc.text(line, marginX, y);
-    y += 16;
+    const wrappedLines = doc.splitTextToSize(line, headerMaxWidth) as string[];
+    wrappedLines.forEach((wrappedLine) => {
+      doc.text(wrappedLine, marginX, y);
+      y += 14;
+    });
   });
 
   y += 8;
