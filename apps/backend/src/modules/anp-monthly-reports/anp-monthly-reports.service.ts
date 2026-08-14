@@ -42,6 +42,10 @@ interface RawResultEntry {
   resultText: string;
   unit: string;
   collectionDate: Date;
+  // Nº do certificado emitido pelo laboratório pra essa amostra — o cliente
+  // precisa dele pra anexar no portal da ANP junto com o reporte (pedido do
+  // usuário). Null quando a amostra ainda não tem certificado anexado.
+  certificateNumber: string | null;
 }
 
 const PARAMETER_ORDER: AnpReportParameter[] = [
@@ -107,6 +111,13 @@ export class AnpMonthlyReportsService {
         compoundId: true,
         collectionDate: true,
         resultRows: { select: { id: true, parameterName: true, result: true, unit: true } },
+        // Só o mais recente — na prática existe 1 certificado por amostra
+        // (mesma premissa já usada em DownloadCertificateBySampleUseCase).
+        certificates: {
+          select: { certificateNumber: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
     });
 
@@ -125,6 +136,7 @@ export class AnpMonthlyReportsService {
         resultText: row.result,
         unit: row.unit,
         collectionDate: sample.collectionDate,
+        certificateNumber: sample.certificates[0]?.certificateNumber ?? null,
       });
       result.set(mk, list);
     }
@@ -229,6 +241,7 @@ export class AnpMonthlyReportsService {
         regulatoryLimit,
         unit,
         compliance: computeAnpCompliance(entry.resultText, regulatoryLimit),
+        certificateNumber: entry.certificateNumber,
       };
     });
   }

@@ -113,7 +113,7 @@ export default function ReportesAnpMesPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr>
-                    {['Data', 'Parâmetro', 'Resultado', 'Limite Regulatório ANP', 'Situação'].map((h) => (
+                    {['Data', 'Parâmetro', 'Resultado', 'Limite Regulatório ANP', 'Nº do Certificado', 'Situação'].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -141,6 +141,7 @@ export default function ReportesAnpMesPage() {
                       <td style={{ padding: '10px 14px' }}>
                         {row.regulatoryLimit.toFixed(2).replace('.', ',')} {row.unit}
                       </td>
+                      <td style={{ padding: '10px 14px' }}>{row.certificateNumber ?? '-'}</td>
                       <td style={{ padding: '10px 14px' }}>
                         <ComplianceStatusIndicator compliance={row.compliance} />
                       </td>

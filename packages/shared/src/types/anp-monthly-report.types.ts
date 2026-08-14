@@ -41,6 +41,10 @@ export interface AnpReportResultRow {
   regulatoryLimit: number;
   unit: string;
   compliance: ComplianceStatus;
+  // Nº do certificado emitido pelo laboratório para essa amostra — o cliente
+  // usa esse número pra anexar o resultado no portal da ANP. Null quando a
+  // amostra ainda não tem certificado anexado.
+  certificateNumber: string | null;
 }
 
 export interface AnpMonthlyReportDto {

@@ -133,19 +133,21 @@ export function buildAnpReportPdfBuffer(input: AnpReportPdfInput): Buffer {
   autoTable(doc, {
     startY: y,
     margin: { left: marginX, right: marginX },
-    head: [['Data', 'Parâmetro', 'Resultado', 'Limite Regulatório ANP', 'Situação']],
+    head: [['Data', 'Parâmetro', 'Resultado', 'Limite Regulatório ANP', 'Nº do Certificado', 'Situação']],
     // Larguras fixas (soma = usableWidth) — sem isso o autoTable dividia o
     // espaço de forma proporcional ao texto mais longo do cabeçalho e
     // "Fora da especificação" estourava pra fora da página numa geração
     // real (ver captura enviada pelo usuário). Coluna "Data" nova (mês pode
     // ter mais de um atendimento — cada linha agora é uma amostra/data, não
-    // um parâmetro único).
+    // um parâmetro único). Coluna "Nº do Certificado" (pedido do usuário): o
+    // cliente precisa desse número pra anexar o resultado no portal da ANP.
     columnStyles: {
-      0: { cellWidth: 70 },
-      1: { cellWidth: 140 },
-      2: { cellWidth: 100 },
-      3: { cellWidth: 110 },
-      4: { cellWidth: 95 },
+      0: { cellWidth: 55 },
+      1: { cellWidth: 115 },
+      2: { cellWidth: 85 },
+      3: { cellWidth: 95 },
+      4: { cellWidth: 75 },
+      5: { cellWidth: 90 },
     },
     // Sem emoji aqui: a fonte padrão do jsPDF (helvetica, um Standard-14
     // font sem esses glyphs) derruba a célula inteira quando encontra um
@@ -159,6 +161,7 @@ export function buildAnpReportPdfBuffer(input: AnpReportPdfInput): Buffer {
       row.label,
       row.result,
       `${row.regulatoryLimit.toFixed(2).replace('.', ',')} ${row.unit}`,
+      row.certificateNumber ?? '-',
       row.compliance === ComplianceStatus.NAO_CONFORME ? 'Fora da especificação' : 'Conforme',
     ]),
     headStyles: { fillColor: ACCENT_COLOR, textColor: 255, fontStyle: 'bold' },
