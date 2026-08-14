@@ -11,23 +11,31 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { SCHEDULE_DERIVED_STATUS_COLORS, SCHEDULE_DERIVED_STATUS_LABELS_PT } from '@portal-alvim/shared';
+import {
+  ANALYSIS_STATUS_LABELS_PT,
+  CustodyExtractionStatus,
+  SCHEDULE_DERIVED_STATUS_COLORS,
+  SCHEDULE_DERIVED_STATUS_LABELS_PT,
+  SampleDto,
+} from '@portal-alvim/shared';
 import { schedulesApi } from '../../../lib/api/schedules.api';
 import { servicePhotosApi, MobileUploadFile } from '../../../lib/api/service-photos.api';
+import { samplesApi } from '../../../lib/api/samples.api';
+import { custodyExtractionsApi } from '../../../lib/api/custody-extractions.api';
 import { API_URL } from '../../../lib/api/client';
 import { tokenStorage } from '../../../lib/auth/storage';
 
 // Hub de campo pro serviço: reúne aqui o que o técnico precisa fazer no
-// local, em vez de espalhar em telas separadas — mesmas 3 ações citadas
-// pelo usuário (fotos, comentários de coleta; cadeia de custódia entra
-// numa fase seguinte). Espelha as seções "Fotos do Serviço" e
-// "Comentários de coleta" da tela /agendamentos/[id]/resultados do portal
-// web (ver ServicePhotosSection.tsx / ScheduleCommentsSection.tsx), sem o
-// restante da tela (análises/resultados continuam só no portal web nesta
-// fase).
+// local — fotos, comentários de coleta e, por composto/ponto configurado,
+// criar a amostra e cadastrar a cadeia de custódia (fotografando o papel
+// preenchido ou digitando na mão). Espelha as seções equivalentes do portal
+// web (ServicePhotosSection/ScheduleCommentsSection/AnalysisSlot +
+// CustodyExtractionSection), simplificado pro celular: a tabela de
+// amostragem em si (revisão dos campos lidos pela IA) fica numa tela à
+// parte, ver /cadeia-custodia/[extractionId].
 function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfirmed: boolean): string {
   if (!dateConfirmed) {
     return new Date(scheduledDate).toLocaleDateString('pt-BR', {
@@ -41,6 +49,186 @@ function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfir
     ? new Date(endDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
     : null;
   return end ? `${start} a ${end}` : start;
+}
+
+const CUSTODY_STATUS_LABELS_PT: Record<CustodyExtractionStatus, string> = {
+  PROCESSING: 'IA lendo...',
+  NEEDS_REVIEW: 'Aguardando revisão',
+  APPROVED: 'Aprovada',
+  FAILED: 'Falha na leitura',
+};
+const CUSTODY_STATUS_COLORS: Record<CustodyExtractionStatus, { background: string; text: string }> = {
+  PROCESSING: { background: '#e0e7ff', text: '#3730a3' },
+  NEEDS_REVIEW: { background: '#fef9c3', text: '#854d0e' },
+  APPROVED: { background: '#dcfce7', text: '#15803d' },
+  FAILED: { background: '#fee2e2', text: '#b91c1c' },
+};
+
+interface AmostraSlotProps {
+  clientId: string;
+  scheduleId: string;
+  samplingPointId: string;
+  compoundId: string;
+  compoundLabel: string;
+  slotNumber: number;
+  totalSlots: number;
+  sample?: SampleDto;
+  defaultCollectionDate: string;
+}
+
+// Um "slot" = uma amostra esperada (ponto + composto + posição, ex.: "2ª
+// amostra de Siloxanos") — mesma lógica de AnalysisSlot.tsx no portal web.
+// Fechado por padrão; abrir revela o botão de criar a amostra (se ainda não
+// existe) ou as ações de cadeia de custódia (se já existe).
+function AmostraSlot({
+  clientId,
+  scheduleId,
+  samplingPointId,
+  compoundId,
+  compoundLabel,
+  slotNumber,
+  totalSlots,
+  sample,
+  defaultCollectionDate,
+}: AmostraSlotProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  const createSampleMutation = useMutation({
+    mutationFn: () =>
+      samplesApi.create({
+        clientId,
+        scheduleId,
+        samplingPointId,
+        compoundId,
+        collectionDate: defaultCollectionDate,
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['samples', 'schedule', scheduleId] }),
+  });
+
+  const { data: extractions } = useQuery({
+    queryKey: ['custody-extractions', sample?.id],
+    queryFn: () => custodyExtractionsApi.listBySample(sample!.id),
+    enabled: !!sample && isOpen,
+  });
+
+  // Só uma cadeia de custódia ativa por amostra (mesma regra do backend) —
+  // uma tentativa que falhou na leitura não conta.
+  const activeExtraction = (extractions ?? []).find((e) => e.status !== 'FAILED');
+  const failedExtractions = (extractions ?? []).filter((e) => e.status === 'FAILED');
+
+  const manualMutation = useMutation({
+    mutationFn: () => custodyExtractionsApi.createManual(sample!.id),
+    onSuccess: (extraction) => {
+      queryClient.invalidateQueries({ queryKey: ['custody-extractions', sample!.id] });
+      router.push(`/cadeia-custodia/${extraction.id}` as never);
+    },
+  });
+
+  async function scanCustody() {
+    if (!sample) return;
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissão necessária', 'Autorize o acesso à câmera pra continuar.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+    if (result.canceled) return;
+
+    setScanning(true);
+    try {
+      const asset = result.assets[0];
+      const file: MobileUploadFile = {
+        uri: asset.uri,
+        name: asset.fileName ?? `cadeia-custodia-${Date.now()}.jpg`,
+        type: asset.mimeType ?? 'image/jpeg',
+      };
+      const extraction = await custodyExtractionsApi.upload(sample.id, file);
+      queryClient.invalidateQueries({ queryKey: ['custody-extractions', sample.id] });
+      router.push(`/cadeia-custodia/${extraction.id}` as never);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  const label = totalSlots > 1 ? `${compoundLabel} — Amostra ${slotNumber} de ${totalSlots}` : compoundLabel;
+  const custodyColors = activeExtraction ? CUSTODY_STATUS_COLORS[activeExtraction.status] : null;
+
+  return (
+    <View style={styles.slot}>
+      <Pressable style={styles.slotHeader} onPress={() => setIsOpen((open) => !open)}>
+        <Text style={styles.slotLabel}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {sample ? (
+            <View style={[styles.miniBadge, { backgroundColor: '#eef2f1' }]}>
+              <Text style={styles.miniBadgeText}>{ANALYSIS_STATUS_LABELS_PT[sample.analysisStatus]}</Text>
+            </View>
+          ) : (
+            <Text style={styles.slotEmptyLabel}>Não iniciada</Text>
+          )}
+          <Text style={styles.slotChevron}>{isOpen ? '▲' : '▼'}</Text>
+        </View>
+      </Pressable>
+
+      {isOpen && (
+        <View style={styles.slotBody}>
+          {!sample ? (
+            <Pressable
+              style={styles.actionButton}
+              onPress={() => createSampleMutation.mutate()}
+              disabled={createSampleMutation.isPending}
+            >
+              <Text style={styles.actionButtonText}>
+                {createSampleMutation.isPending ? 'Criando...' : 'Criar amostra'}
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={{ gap: 8 }}>
+              <Text style={styles.custodyTitle}>Cadeia de Custódia</Text>
+
+              {activeExtraction ? (
+                <Pressable
+                  style={[styles.custodyStatusRow, { backgroundColor: custodyColors!.background }]}
+                  onPress={() => router.push(`/cadeia-custodia/${activeExtraction.id}` as never)}
+                >
+                  <Text style={[styles.custodyStatusText, { color: custodyColors!.text }]}>
+                    {CUSTODY_STATUS_LABELS_PT[activeExtraction.status]}
+                  </Text>
+                  <Text style={[styles.custodyStatusText, { color: custodyColors!.text }]}>Ver/editar ›</Text>
+                </Pressable>
+              ) : (
+                <>
+                  <Pressable style={styles.actionButton} onPress={scanCustody} disabled={scanning}>
+                    <Text style={styles.actionButtonText}>
+                      {scanning ? 'Enviando...' : 'Fotografar cadeia preenchida'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.actionButtonSecondary}
+                    onPress={() => manualMutation.mutate()}
+                    disabled={manualMutation.isPending}
+                  >
+                    <Text style={styles.actionButtonSecondaryText}>
+                      {manualMutation.isPending ? 'Abrindo...' : 'Preencher manualmente'}
+                    </Text>
+                  </Pressable>
+                  {failedExtractions.length > 0 && (
+                    <Text style={styles.custodyFailedHint}>
+                      {failedExtractions.length} tentativa(s) de leitura falharam — tente de novo.
+                    </Text>
+                  )}
+                </>
+              )}
+            </View>
+          )}
+        </View>
+      )}
+    </View>
+  );
 }
 
 export default function ServicoDetalheScreen() {
@@ -59,6 +247,12 @@ export default function ServicoDetalheScreen() {
   const { data: schedule, isLoading: isLoadingSchedule } = useQuery({
     queryKey: ['schedules', id],
     queryFn: () => schedulesApi.get(id),
+    enabled: !!id,
+  });
+
+  const { data: samples } = useQuery({
+    queryKey: ['samples', 'schedule', id],
+    queryFn: () => samplesApi.listBySchedule(id),
     enabled: !!id,
   });
 
@@ -134,6 +328,21 @@ export default function ServicoDetalheScreen() {
 
   const colors = schedule ? SCHEDULE_DERIVED_STATUS_COLORS[schedule.derivedStatus] : null;
 
+  // Agrupa amostras já existentes por ponto+composto, ordenadas por criação
+  // — a i-ésima amostra criada pro par vira o slot i (mesma lógica de
+  // groupSamplesBySlot em resultados/page.tsx no portal web).
+  const activeSamples = (samples ?? []).filter((s) => s.active);
+  const samplesBySlot = new Map<string, SampleDto[]>();
+  [...activeSamples]
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .forEach((sample) => {
+      if (!sample.samplingPointId || !sample.compoundId) return;
+      const key = `${sample.samplingPointId}|${sample.compoundId}`;
+      const list = samplesBySlot.get(key) ?? [];
+      list.push(sample);
+      samplesBySlot.set(key, list);
+    });
+
   return (
     <>
       <Stack.Screen options={{ title: schedule?.clientName ?? 'Serviço' }} />
@@ -152,6 +361,43 @@ export default function ServicoDetalheScreen() {
                 </Text>
               </View>
             )}
+          </View>
+        )}
+
+        {schedule && schedule.samplingPoints.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Amostras e Cadeia de Custódia</Text>
+            <Text style={styles.sectionHint}>
+              Toque num composto pra criar a amostra e/ou fotografar a cadeia de custódia preenchida.
+            </Text>
+            <View style={{ gap: 10 }}>
+              {schedule.samplingPoints.map((point) => (
+                <View key={point.samplingPointId}>
+                  <Text style={styles.pointTitle}>{point.samplingPointName ?? 'Ponto'}</Text>
+                  <View style={{ gap: 8, marginTop: 6 }}>
+                    {point.compounds.map((compound) => {
+                      const key = `${point.samplingPointId}|${compound.id}`;
+                      const existing = samplesBySlot.get(key) ?? [];
+                      const totalSlots = Math.max(compound.quantity, existing.length);
+                      return Array.from({ length: totalSlots }, (_, index) => (
+                        <AmostraSlot
+                          key={`${key}-${index}`}
+                          clientId={schedule.clientId}
+                          scheduleId={schedule.id}
+                          samplingPointId={point.samplingPointId}
+                          compoundId={compound.id}
+                          compoundLabel={`${compound.code} - ${compound.name}`}
+                          slotNumber={index + 1}
+                          totalSlots={totalSlots}
+                          sample={existing[index]}
+                          defaultCollectionDate={schedule.scheduledDate.slice(0, 10)}
+                        />
+                      ));
+                    })}
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
@@ -251,6 +497,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
   sectionHint: { fontSize: 12, color: '#6b7280', marginBottom: 10 },
   empty: { fontSize: 13, color: '#6b7280', marginTop: 8 },
+  pointTitle: { fontSize: 14, fontWeight: '700', color: '#1f2937' },
   photoButtonsRow: { flexDirection: 'row', gap: 10 },
   photoButton: {
     flex: 1,
@@ -274,4 +521,43 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   saving: { fontSize: 11, color: '#6b7280', marginTop: 6 },
+  slot: { borderWidth: 1, borderColor: '#e2e5e9', borderRadius: 6 },
+  slotHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+  },
+  slotLabel: { fontSize: 13, color: '#1f2937', flexShrink: 1 },
+  slotEmptyLabel: { fontSize: 12, color: '#9ca3af' },
+  slotChevron: { fontSize: 11, color: '#9ca3af' },
+  slotBody: { padding: 10, paddingTop: 0 },
+  miniBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  miniBadgeText: { fontSize: 11, fontWeight: '600', color: '#1f5f4d' },
+  actionButton: {
+    backgroundColor: '#1f5f4d',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  actionButtonSecondary: {
+    borderWidth: 1,
+    borderColor: '#1f5f4d',
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  actionButtonSecondaryText: { color: '#1f5f4d', fontWeight: '600', fontSize: 13 },
+  custodyTitle: { fontSize: 13, fontWeight: '700', color: '#1f2937' },
+  custodyStatusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  custodyStatusText: { fontSize: 13, fontWeight: '600' },
+  custodyFailedHint: { fontSize: 11, color: '#b91c1c' },
 });
