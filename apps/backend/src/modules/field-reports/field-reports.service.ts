@@ -225,7 +225,7 @@ export class FieldReportsService {
     });
 
     const introParagraph =
-      'De acordo com a RANP 886, o produtor e comercializador do biometano deve monitorar através ' +
+      'De acordo com a RANP 1006, o produtor e comercializador do biometano deve monitorar através ' +
       'de amostragens e análises a qualidade do biometano produzido. Os certificados analíticos ' +
       'evidenciam o total atendimento regulatório citado conforme compromisso firmado entre ' +
       'produtor e agência reguladora ANP.';

@@ -20,7 +20,7 @@ export interface FieldReportPdfInput {
 }
 
 // Layout fixo, baseado no relatório de campo em Word que a Alvim já usa
-// manualmente (RANP 886 → resumo do serviço → responsabilização/fechamento
+// manualmente (RANP 1006 → resumo do serviço → responsabilização/fechamento
 // → grade de fotos 2x2) — mesmo esqueleto de jsPDF de
 // schedules/application/schedule-pdf.util.ts (logo via getLogoBase64(),
 // unit 'pt'/format 'a4'), só que aqui com parágrafos corridos em vez de
