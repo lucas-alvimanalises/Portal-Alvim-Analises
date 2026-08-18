@@ -364,14 +364,27 @@ export default function ServicoDetalheScreen() {
           </View>
         )}
 
-        {schedule && schedule.samplingPoints.length > 0 && (
+        {schedule && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Amostras e Cadeia de Custódia</Text>
-            <Text style={styles.sectionHint}>
-              Toque num composto pra criar a amostra e/ou fotografar a cadeia de custódia preenchida.
-            </Text>
-            <View style={{ gap: 10 }}>
-              {schedule.samplingPoints.map((point) => (
+            {schedule.samplingPoints.length === 0 ? (
+              // Nunca fica em branco silenciosamente: se não aparece nada
+              // aqui, precisa dar pra saber se é porque o agendamento não
+              // tem ponto/composto configurado (arrume no portal web) ou se
+              // é o app que ainda não pegou uma atualização — ver
+              // "Verificar atualizações" em Perfil.
+              <Text style={styles.sectionHint}>
+                Este agendamento ainda não tem ponto de amostragem/composto configurado — cadastre no
+                portal web antes de criar a amostra aqui.
+              </Text>
+            ) : (
+              <>
+                <Text style={styles.sectionHint}>
+                  Toque num composto pra criar a amostra e/ou fotografar a cadeia de custódia
+                  preenchida.
+                </Text>
+                <View style={{ gap: 10 }}>
+                  {schedule.samplingPoints.map((point) => (
                 <View key={point.samplingPointId}>
                   <Text style={styles.pointTitle}>{point.samplingPointName ?? 'Ponto'}</Text>
                   <View style={{ gap: 8, marginTop: 6 }}>
@@ -396,8 +409,10 @@ export default function ServicoDetalheScreen() {
                     })}
                   </View>
                 </View>
-              ))}
-            </View>
+                  ))}
+                </View>
+              </>
+            )}
           </View>
         )}
 
