@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { AuthenticatedUser } from '@portal-alvim/shared';
 import { fixMultipartFilename } from '../../../../common/utils/multipart-filename.util';
 import { CompoundsService } from '../../../compounds/compounds.service';
@@ -45,6 +45,25 @@ export class UploadCustodyDocumentUseCase {
       if (!sample) {
         throw new NotFoundException('Amostra não encontrada.');
       }
+    }
+
+    // Achado real (usuário reportou "pasta com cadeia de custódia
+    // duplicada"): este upload direto (usado na pasta do composto, ver
+    // amostras/composto/[compoundId]/page.tsx) nunca teve nenhuma proteção
+    // contra duplicata — diferente do fluxo de sincronização com o disco
+    // (SyncCustodyDocumentsFromDiskUseCase), que já pula arquivo repetido
+    // comparando composto+ano+nome. Mesma chave aqui: se alguém reenviar
+    // (sem querer, ou achando que precisava "adicionar" um documento que o
+    // sistema já tinha gerado sozinho) o mesmo arquivo pro mesmo composto+
+    // ano, bloqueia em vez de duplicar a pasta.
+    const existingDocuments = await this.custodyDocumentRepository.findMany(dto.compoundId);
+    const alreadyExists = existingDocuments.some(
+      (doc) => doc.year === dto.year && doc.file.filename === file.originalname,
+    );
+    if (alreadyExists) {
+      throw new ConflictException(
+        `Já existe um documento "${file.originalname}" nesta pasta (${compound.code} - ${compound.name} / ${dto.year}). Exclua o existente antes de enviar de novo, se for pra substituir.`,
+      );
     }
 
     const uploaded = await this.fileStorageService.upload({
