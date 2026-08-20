@@ -5,6 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar';
 import { LogoutButton } from '../../components/layout/LogoutButton';
 import { EmpresaSwitcher } from '../../components/layout/EmpresaSwitcher';
 import { BackButton } from '../../components/layout/BackButton';
+import { ThemeToggleButton } from '../../components/layout/ThemeToggleButton';
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   const session = getSession();
@@ -31,7 +32,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
               <BackButton />
               <EmpresaSwitcher role={session.role} />
             </div>
-            <LogoutButton />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <ThemeToggleButton />
+              <LogoutButton />
+            </div>
           </header>
           <main style={{ padding: 24, flex: 1 }}>{children}</main>
         </div>

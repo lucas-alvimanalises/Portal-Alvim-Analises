@@ -37,6 +37,36 @@
 
   --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
   --shadow-md: 0 4px 14px rgba(16, 24, 40, 0.1);
+
+  /* Usados só nos dois lugares que hardcodavam a cor direto (.input,
+     .skeleton) em vez de token — existem pra esses dois casos ficarem
+     corretos no modo escuro também, sem precisar caçar cor fixa por cor
+     fixa. */
+  --color-input-bg: #ffffff;
+  --color-skeleton: #e4e7eb;
+}
+
+/* Modo escuro — alternado pelo botão no cabeçalho do portal (ver
+   ThemeToggleButton.tsx/ThemeContext.tsx), salvo por navegador. Só
+   redefine os tokens; todo o resto do CSS (e a maior parte dos estilos
+   inline do app) já referencia var(--color-...), então herda o tema
+   automaticamente. Estilos inline que hardcodam hex direto (ex.: alguns
+   badges de status específicos) não são cobertos por isso — ver nota
+   quando isso for pego num pente-fino futuro. */
+:root[data-theme='dark'] {
+  --color-bg: #14161b;
+  --color-surface: #1c1f26;
+  --color-border: #2d323d;
+  --color-text: #e7e9ec;
+  --color-text-muted: #9aa2af;
+  --color-primary: #3fae8e;
+  --color-primary-hover: #57c1a2;
+  --color-primary-soft: rgba(63, 174, 142, 0.18);
+  --color-danger: #f0847c;
+  --color-input-bg: #20242c;
+  --color-skeleton: #2a2f38;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -133,7 +163,7 @@ textarea.input {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: var(--font-size-body);
-  background: white;
+  background: var(--color-input-bg);
   color: var(--color-text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -246,7 +276,7 @@ tbody tr:hover {
   }
 }
 .skeleton {
-  background: #e4e7eb;
+  background: var(--color-skeleton);
   border-radius: var(--radius-sm);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
