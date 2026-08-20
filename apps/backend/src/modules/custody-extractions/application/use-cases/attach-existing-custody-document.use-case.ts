@@ -69,6 +69,25 @@ export class AttachExistingCustodyDocumentUseCase {
     const existing = await this.custodyExtractionRepository.findManyBySampleId(sampleId);
     assertNoActiveCustodyExtraction(existing);
 
+    // Achado real (usuário reportou pasta de Cadeia de Custódia com
+    // arquivos duplicados): esta rota nunca conferia se o composto+ano já
+    // tinha um documento com esse mesmo nome — quem tem só uma cadeia de
+    // custódia já importada em massa sem amostra vinculada (ex.: backlog
+    // do OneDrive, sampleId null) e depois reanexa o mesmo arquivo aqui pra
+    // vincular à amostra certa acabava criando um SEGUNDO documento em vez
+    // de um só. Mesma checagem por nome já usada no upload direto da pasta
+    // (UploadCustodyDocumentUseCase) e na sincronização com o disco.
+    const year = sample.collectionDate.getUTCFullYear();
+    const existingDocuments = await this.custodyDocumentRepository.findMany(sample.compoundId);
+    const alreadyExists = existingDocuments.some(
+      (doc) => doc.year === year && doc.file.filename === file.originalname,
+    );
+    if (alreadyExists) {
+      throw new BadRequestException(
+        `Já existe um documento "${file.originalname}" na pasta deste composto/ano — provavelmente já foi importado antes sem amostra vinculada. Baixe/confira o arquivo existente antes de reenviar.`,
+      );
+    }
+
     const uploaded = await this.fileStorageService.upload({
       buffer: file.buffer,
       filename: file.originalname,
