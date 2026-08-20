@@ -71,8 +71,15 @@ export class SchedulesController {
     return toScheduleDto(schedule, user.role, derivedStatus);
   }
 
+  // Liberado pro Técnico a pedido do usuário: em campo, o técnico às vezes
+  // precisa adicionar um ponto de amostragem/composto que não estava
+  // configurado (cliente pede uma análise extra na hora) — sem acesso aqui,
+  // ele não conseguia criar a amostra correspondente depois. O botão
+  // "Editar" já aparecia pra ele no front (ScheduleListView só escondia de
+  // CLIENT), só o backend barrava no salvar — clássico "mostra botão,
+  // backend recusa" (mesma classe de bug já corrigida em outros módulos).
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.MANAGER)
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateScheduleDto,

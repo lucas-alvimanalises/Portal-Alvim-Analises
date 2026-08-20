@@ -35,8 +35,9 @@ interface ScheduleListViewProps {
   showResultsSummaryIndicator?: boolean;
   // Editar (data, técnicos, pontos) só faz sentido pra serviços que ainda
   // vão acontecer — em Realizados não tem por que reabrir esse formulário.
-  // Nunca aparece pra CLIENT de qualquer forma (só ADMIN/MANAGER editam
-  // agendamento — confirmado com o usuário), independente deste valor.
+  // Nunca aparece pra CLIENT de qualquer forma (ADMIN/MANAGER/TECHNICIAN
+  // editam agendamento — liberado pro técnico também, ver schedules.controller.ts),
+  // independente deste valor.
   showEditLink?: boolean;
   // Filtra os agendamentos que pertencem a esta tela (Agendamento vs.
   // Realizados) — a classificação é só de exibição, os dados são os mesmos.
