@@ -38,6 +38,12 @@
           "photosPermission": "O app acessa suas fotos para anexar imagens do serviço realizado.",
           "cameraPermission": "O app usa a câmera para fotografar o serviço realizado."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O app usa sua localização para registrar onde a foto do serviço foi tirada."
+        }
       ]
     ],
     "extra": {

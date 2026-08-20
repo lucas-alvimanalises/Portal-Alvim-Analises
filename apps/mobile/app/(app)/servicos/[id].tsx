@@ -27,6 +27,8 @@ import { samplesApi } from '../../../lib/api/samples.api';
 import { custodyExtractionsApi } from '../../../lib/api/custody-extractions.api';
 import { API_URL, getApiErrorMessage } from '../../../lib/api/client';
 import { tokenStorage } from '../../../lib/auth/storage';
+import { getCurrentStampLocation, formatStampText } from '../../../lib/location-stamp';
+import { PhotoStampCapture } from '../../../components/PhotoStampCapture';
 
 // Hub de campo pro serviço: reúne aqui o que o técnico precisa fazer no
 // local — fotos, comentários de coleta e, por composto/ponto configurado,
@@ -241,6 +243,7 @@ export default function ServicoDetalheScreen() {
   const [authHeader, setAuthHeader] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [pendingStamp, setPendingStamp] = useState<{ uri: string; lines: string[] } | null>(null);
 
   useEffect(() => {
     tokenStorage.getAccessToken().then((token) => {
@@ -280,6 +283,12 @@ export default function ServicoDetalheScreen() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['service-photos', id] }),
   });
 
+  async function uploadPhotoFile(uri: string) {
+    const file: MobileUploadFile = { uri, name: `foto-${Date.now()}.jpg`, type: 'image/jpeg' };
+    await servicePhotosApi.upload(id, file);
+    queryClient.invalidateQueries({ queryKey: ['service-photos', id] });
+  }
+
   async function pickAndUpload(source: 'camera' | 'library') {
     const permission =
       source === 'camera'
@@ -297,6 +306,25 @@ export default function ServicoDetalheScreen() {
 
     if (result.canceled) return;
 
+    // Só carimba data/hora/localização em foto tirada agora pela câmera —
+    // uma foto escolhida da galeria pode ter sido tirada em outro momento/
+    // lugar, carimbar com a localização ATUAL seria uma informação falsa
+    // (pedido do usuário: "localização real").
+    if (source === 'camera') {
+      setUploading(true);
+      const asset = result.assets[0];
+      try {
+        const location = await getCurrentStampLocation();
+        setPendingStamp({ uri: asset.uri, lines: formatStampText(location) });
+      } catch {
+        // Sem carimbo (falha ao pegar localização) não deve impedir de
+        // documentar o serviço — sobe a foto original mesmo assim.
+        await uploadPhotoFile(asset.uri);
+        setUploading(false);
+      }
+      return;
+    }
+
     setUploading(true);
     try {
       for (const asset of result.assets) {
@@ -308,6 +336,31 @@ export default function ServicoDetalheScreen() {
         await servicePhotosApi.upload(id, file);
       }
       queryClient.invalidateQueries({ queryKey: ['service-photos', id] });
+    } catch {
+      Alert.alert('Erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleStampCaptured(stampedUri: string) {
+    setPendingStamp(null);
+    try {
+      await uploadPhotoFile(stampedUri);
+    } catch {
+      Alert.alert('Erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleStampError() {
+    const original = pendingStamp?.uri;
+    setPendingStamp(null);
+    try {
+      // Não deixa o técnico sem a foto só porque o carimbo falhou — sobe sem
+      // carimbo mesmo (mesmo raciocínio do catch de localização acima).
+      if (original) await uploadPhotoFile(original);
     } catch {
       Alert.alert('Erro', 'Não foi possível enviar a foto. Tente novamente.');
     } finally {
@@ -350,6 +403,14 @@ export default function ServicoDetalheScreen() {
   return (
     <>
       <Stack.Screen options={{ title: schedule?.clientName ?? 'Serviço' }} />
+      {pendingStamp && (
+        <PhotoStampCapture
+          uri={pendingStamp.uri}
+          lines={pendingStamp.lines}
+          onCaptured={handleStampCaptured}
+          onError={handleStampError}
+        />
+      )}
       <ScrollView contentContainerStyle={styles.container}>
         {schedule && (
           <View style={styles.header}>
