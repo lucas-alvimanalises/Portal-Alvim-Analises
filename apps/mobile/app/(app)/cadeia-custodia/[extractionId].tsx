@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -18,7 +19,7 @@ import {
 } from '@portal-alvim/shared';
 import { custodyExtractionsApi } from '../../../lib/api/custody-extractions.api';
 import { servicePhotosApi } from '../../../lib/api/service-photos.api';
-import { API_URL } from '../../../lib/api/client';
+import { API_URL, getApiErrorMessage } from '../../../lib/api/client';
 import { tokenStorage } from '../../../lib/auth/storage';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.7;
@@ -71,6 +72,8 @@ export default function CadeiaDeCustodiaRevisaoScreen() {
   const saveMutation = useMutation({
     mutationFn: (data: CustodyExtractedData) => custodyExtractionsApi.updateCorrections(extractionId, data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custody-extraction', extractionId] }),
+    onError: (error) =>
+      Alert.alert('Não foi possível salvar', getApiErrorMessage(error, 'Tente novamente.')),
   });
 
   const approveMutation = useMutation({
@@ -82,11 +85,20 @@ export default function CadeiaDeCustodiaRevisaoScreen() {
         queryClient.invalidateQueries({ queryKey: ['samples'] });
       }
     },
+    // A causa mais comum daqui é o aprovador não ter assinatura digital
+    // cadastrada ainda (o backend já devolve essa mensagem específica, ver
+    // ApproveCustodyExtractionUseCase) — antes o app mostrava só um erro
+    // genérico, escondendo exatamente o que fazer (cadastrar a assinatura em
+    // "Meu Perfil", no portal web).
+    onError: (error) =>
+      Alert.alert('Não foi possível aprovar', getApiErrorMessage(error, 'Tente novamente.')),
   });
 
   const selectPhotoMutation = useMutation({
     mutationFn: (photoId: string | null) => custodyExtractionsApi.selectPhoto(extractionId, photoId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custody-extraction', extractionId] }),
+    onError: (error) =>
+      Alert.alert('Não foi possível selecionar a foto', getApiErrorMessage(error, 'Tente novamente.')),
   });
 
   function currentData(): CustodyExtractedData {
@@ -285,7 +297,9 @@ export default function CadeiaDeCustodiaRevisaoScreen() {
             )}
 
             {approveMutation.isError && (
-              <Text style={styles.errorText}>Não foi possível aprovar. Tente novamente.</Text>
+              <Text style={styles.errorText}>
+                {getApiErrorMessage(approveMutation.error, 'Não foi possível aprovar. Tente novamente.')}
+              </Text>
             )}
           </View>
         )}

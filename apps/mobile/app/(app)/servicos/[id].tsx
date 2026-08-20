@@ -25,7 +25,7 @@ import { schedulesApi } from '../../../lib/api/schedules.api';
 import { servicePhotosApi, MobileUploadFile } from '../../../lib/api/service-photos.api';
 import { samplesApi } from '../../../lib/api/samples.api';
 import { custodyExtractionsApi } from '../../../lib/api/custody-extractions.api';
-import { API_URL } from '../../../lib/api/client';
+import { API_URL, getApiErrorMessage } from '../../../lib/api/client';
 import { tokenStorage } from '../../../lib/auth/storage';
 
 // Hub de campo pro serviço: reúne aqui o que o técnico precisa fazer no
@@ -106,6 +106,8 @@ function AmostraSlot({
         collectionDate: defaultCollectionDate,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['samples', 'schedule', scheduleId] }),
+    onError: (error) =>
+      Alert.alert('Não foi possível criar a amostra', getApiErrorMessage(error, 'Tente novamente.')),
   });
 
   const { data: extractions } = useQuery({
@@ -125,6 +127,8 @@ function AmostraSlot({
       queryClient.invalidateQueries({ queryKey: ['custody-extractions', sample!.id] });
       router.push(`/cadeia-custodia/${extraction.id}` as never);
     },
+    onError: (error) =>
+      Alert.alert('Não foi possível abrir', getApiErrorMessage(error, 'Tente novamente.')),
   });
 
   async function scanCustody() {
@@ -148,8 +152,8 @@ function AmostraSlot({
       const extraction = await custodyExtractionsApi.upload(sample.id, file);
       queryClient.invalidateQueries({ queryKey: ['custody-extractions', sample.id] });
       router.push(`/cadeia-custodia/${extraction.id}` as never);
-    } catch {
-      Alert.alert('Erro', 'Não foi possível enviar a foto. Tente novamente.');
+    } catch (error) {
+      Alert.alert('Erro', getApiErrorMessage(error, 'Não foi possível enviar a foto. Tente novamente.'));
     } finally {
       setScanning(false);
     }

@@ -46,3 +46,17 @@ apiClient.interceptors.response.use(
     throw error;
   },
 );
+
+// NestJS (ValidationPipe/HttpExceptionFilter) devolve { message } — string
+// pra exceções de negócio (ex.: "Você precisa cadastrar sua assinatura...")
+// ou array de strings quando é erro de validação de campo. Sem extrair isso,
+// toda falha virava um "Não foi possível..." genérico, escondendo a causa
+// real (achado num caso real: aprovação de cadeia de custódia falhando sem
+// dizer que faltava assinatura cadastrada).
+export function getApiErrorMessage(error: unknown, fallback: string): string {
+  const message = (error as { response?: { data?: { message?: string | string[] } } })?.response?.data
+    ?.message;
+  if (Array.isArray(message)) return message.join('\n');
+  if (typeof message === 'string') return message;
+  return fallback;
+}
