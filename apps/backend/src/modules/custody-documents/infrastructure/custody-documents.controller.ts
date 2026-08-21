@@ -25,6 +25,7 @@ import { UploadCustodyDocumentUseCase } from '../application/use-cases/upload-cu
 import { DeleteCustodyDocumentUseCase } from '../application/use-cases/delete-custody-document.use-case';
 import { DownloadCustodyDocumentUseCase } from '../application/use-cases/download-custody-document.use-case';
 import { SyncCustodyDocumentsFromDiskUseCase } from '../application/use-cases/sync-custody-documents-from-disk.use-case';
+import { DedupeCustodyDocumentsUseCase } from '../application/use-cases/dedupe-custody-documents.use-case';
 import { toCustodyDocumentDto } from '../application/custody-document.mapper';
 
 // Sem escopo de cliente (ver domain/custody-document.repository.ts) — por
@@ -40,6 +41,7 @@ export class CustodyDocumentsController {
     private readonly deleteCustodyDocumentUseCase: DeleteCustodyDocumentUseCase,
     private readonly downloadCustodyDocumentUseCase: DownloadCustodyDocumentUseCase,
     private readonly syncCustodyDocumentsFromDiskUseCase: SyncCustodyDocumentsFromDiskUseCase,
+    private readonly dedupeCustodyDocumentsUseCase: DedupeCustodyDocumentsUseCase,
   ) {}
 
   @Get()
@@ -55,6 +57,16 @@ export class CustodyDocumentsController {
   @Roles(Role.ADMIN, Role.MANAGER)
   async sync(@CurrentUser() user: AuthenticatedUser) {
     return this.syncCustodyDocumentsFromDiskUseCase.execute(user);
+  }
+
+  // Botão "Remover duplicatas" — achado real (usuário reportou pasta com
+  // cadeia de custódia repetida): só remove o padrão seguro (2 cópias, uma
+  // órfã sem amostra + uma vinculada), o resto entra em skippedGroups pra
+  // revisão manual. Idempotente, sem efeito colateral rodar de novo.
+  @Post('dedupe')
+  @Roles(Role.ADMIN, Role.MANAGER)
+  async dedupe() {
+    return this.dedupeCustodyDocumentsUseCase.execute();
   }
 
   @Get(':id/download')

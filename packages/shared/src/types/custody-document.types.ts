@@ -32,3 +32,20 @@ export interface CustodyDocumentsSyncResult {
   skipped: number;
   failures: { file: string; reason: string }[];
 }
+
+// Resultado do botão "Remover duplicatas" (POST /custody-documents/dedupe) —
+// só remove o padrão seguro (2 cópias, uma órfã + uma vinculada a amostra);
+// qualquer grupo fora disso (3+ cópias, ou 2 já vinculadas a amostras
+// diferentes) entra em skippedGroups pra revisão manual, nunca apagado
+// automaticamente.
+export interface CustodyDocumentsDedupeSkippedGroup {
+  compoundCode: string;
+  filename: string;
+  documentIds: string[];
+}
+
+export interface CustodyDocumentsDedupeResult {
+  deleted: number;
+  failures: { id: string; reason: string }[];
+  skippedGroups: CustodyDocumentsDedupeSkippedGroup[];
+}

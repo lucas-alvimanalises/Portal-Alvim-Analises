@@ -1,5 +1,6 @@
 import {
   CustodyDocumentDto,
+  CustodyDocumentsDedupeResult,
   CustodyDocumentsSyncResult,
   CustodyDocumentUploadFields,
 } from '@portal-alvim/shared';
@@ -24,6 +25,9 @@ export const custodyDocumentsApi = {
   // Botão "Atualizar pastas" — varre a pasta local do OneDrive configurada
   // no backend e sobe qualquer PDF novo (período de transição).
   sync: () => apiClient.post<CustodyDocumentsSyncResult>('custody-documents/sync'),
+  // Botão "Remover duplicatas" — só remove o padrão seguro (órfã + vinculada
+  // repetida), o resto volta pra revisão manual (ver skippedGroups).
+  dedupe: () => apiClient.post<CustodyDocumentsDedupeResult>('custody-documents/dedupe'),
   // Links diretos (não passam por fetch/apiClient): cookies httpOnly viajam
   // sozinhos numa navegação same-origin através do proxy.
   downloadUrl: (id: string) => `/api/backend/custody-documents/${id}/download`,

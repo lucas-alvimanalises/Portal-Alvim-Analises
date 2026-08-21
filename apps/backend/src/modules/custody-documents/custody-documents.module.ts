@@ -10,6 +10,7 @@ import { UploadCustodyDocumentUseCase } from './application/use-cases/upload-cus
 import { DeleteCustodyDocumentUseCase } from './application/use-cases/delete-custody-document.use-case';
 import { DownloadCustodyDocumentUseCase } from './application/use-cases/download-custody-document.use-case';
 import { SyncCustodyDocumentsFromDiskUseCase } from './application/use-cases/sync-custody-documents-from-disk.use-case';
+import { DedupeCustodyDocumentsUseCase } from './application/use-cases/dedupe-custody-documents.use-case';
 
 @Module({
   imports: [CompoundsModule, AttachmentsModule, SamplesModule],
@@ -21,6 +22,7 @@ import { SyncCustodyDocumentsFromDiskUseCase } from './application/use-cases/syn
     DeleteCustodyDocumentUseCase,
     DownloadCustodyDocumentUseCase,
     SyncCustodyDocumentsFromDiskUseCase,
+    DedupeCustodyDocumentsUseCase,
   ],
   exports: [CUSTODY_DOCUMENT_REPOSITORY],
 })

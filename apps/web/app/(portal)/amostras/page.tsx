@@ -30,6 +30,14 @@ export default function CadeiaDeCustodiaPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custody-documents'] }),
   });
 
+  // Botão "Remover duplicatas" — achado real (pasta com cadeia de custódia
+  // repetida, ver DedupeCustodyDocumentsUseCase). Só remove o padrão seguro;
+  // grupos fora disso ficam listados pra revisão manual, não apagados.
+  const dedupeMutation = useMutation({
+    mutationFn: () => custodyDocumentsApi.dedupe(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custody-documents'] }),
+  });
+
   const countByCompound = new Map<string, number>();
   documents?.forEach((doc) => {
     countByCompound.set(doc.compoundId, (countByCompound.get(doc.compoundId) ?? 0) + 1);
@@ -39,14 +47,28 @@ export default function CadeiaDeCustodiaPage() {
     <div>
       <div className="page-header">
         <h1>Cadeia de Custódia</h1>
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={() => syncMutation.mutate()}
-          disabled={syncMutation.isPending}
-        >
-          {syncMutation.isPending ? 'Atualizando...' : 'Atualizar pastas'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => {
+              if (window.confirm('Procurar e remover cadeias de custódia duplicadas?')) {
+                dedupeMutation.mutate();
+              }
+            }}
+            disabled={dedupeMutation.isPending}
+          >
+            {dedupeMutation.isPending ? 'Verificando...' : 'Remover duplicatas'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => syncMutation.mutate()}
+            disabled={syncMutation.isPending}
+          >
+            {syncMutation.isPending ? 'Atualizando...' : 'Atualizar pastas'}
+          </button>
+        </div>
       </div>
 
       {syncMutation.isError && (
@@ -63,6 +85,39 @@ export default function CadeiaDeCustodiaPage() {
             ` — ${syncMutation.data.failures.length} falha(s)`}
           .
         </p>
+      )}
+
+      {dedupeMutation.isError && (
+        <p style={{ fontSize: 13, color: 'var(--color-danger)', marginTop: -12, marginBottom: 20 }}>
+          {dedupeMutation.error instanceof ApiError
+            ? dedupeMutation.error.message
+            : 'Não foi possível verificar duplicatas.'}
+        </p>
+      )}
+      {dedupeMutation.isSuccess && (
+        <div style={{ marginTop: -12, marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
+            {dedupeMutation.data.deleted} duplicata(s) removida(s)
+            {dedupeMutation.data.failures.length > 0 &&
+              ` — ${dedupeMutation.data.failures.length} falha(s)`}
+            .
+          </p>
+          {dedupeMutation.data.skippedGroups.length > 0 && (
+            <div className="card" style={{ marginTop: 8, background: '#fef9c3' }}>
+              <p style={{ fontSize: 13, fontWeight: 600, marginTop: 0, marginBottom: 6 }}>
+                {dedupeMutation.data.skippedGroups.length} grupo(s) precisam de revisão manual
+                (não removidos automaticamente):
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+                {dedupeMutation.data.skippedGroups.map((group, index) => (
+                  <li key={index}>
+                    {group.compoundCode} — {group.filename} ({group.documentIds.length} cópias)
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
 
       {isLoading ? (
