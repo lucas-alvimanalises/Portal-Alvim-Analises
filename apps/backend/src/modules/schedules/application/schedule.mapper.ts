@@ -36,6 +36,9 @@ export function toScheduleDto(
     internalComments: viewerRole === Role.CLIENT ? null : schedule.internalComments,
     clientComments: schedule.clientComments,
     clientResponse: schedule.clientResponse,
+    // Sempre visível (equipe Alvim e cliente) — só a edição é restrita à
+    // equipe (ver UpdateScheduleCommentsUseCase).
+    trackingCode: schedule.trackingCode,
     createdAt: schedule.createdAt.toISOString(),
     updatedAt: schedule.updatedAt.toISOString(),
   };

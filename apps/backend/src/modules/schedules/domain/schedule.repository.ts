@@ -28,6 +28,7 @@ export interface UpdateScheduleCommentsData {
   internalComments?: string;
   clientComments?: string;
   clientResponse?: string;
+  trackingCode?: string;
 }
 
 export type ScheduleWithRelations = Schedule & {

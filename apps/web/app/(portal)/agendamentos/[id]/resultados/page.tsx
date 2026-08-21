@@ -294,6 +294,7 @@ export default function ResultadosAnaliticosPage() {
               internalComments={schedule.internalComments}
               clientComments={schedule.clientComments}
               clientResponse={schedule.clientResponse}
+              trackingCode={schedule.trackingCode}
             />
           )}
         </div>

@@ -12,4 +12,8 @@ export class UpdateScheduleCommentsDto {
   @IsOptional()
   @IsString()
   clientResponse?: string;
+
+  @IsOptional()
+  @IsString()
+  trackingCode?: string;
 }

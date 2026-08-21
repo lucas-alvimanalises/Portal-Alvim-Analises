@@ -365,6 +365,12 @@ model Schedule {
   // Alvim só lê.
   clientResponse   String? @db.Text
 
+  // Código de rastreio dos Correios do envio das amostras pro laboratório
+  // parceiro (pedido do usuário) — só a equipe Alvim edita, mas fica
+  // visível pro cliente também (não tem nada de sensível nisso, e ajuda o
+  // cliente a acompanhar quando a amostra vai chegar no laboratório).
+  trackingCode String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
