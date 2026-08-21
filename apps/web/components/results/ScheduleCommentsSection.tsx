@@ -11,21 +11,6 @@ interface ScheduleCommentsSectionProps {
   internalComments: string | null;
   clientComments: string | null;
   clientResponse: string | null;
-  trackingCode: string | null;
-}
-
-// Site oficial dos Correios exige captcha em toda consulta — não existe link
-// que já chegue com o resultado pronto (confirmado navegando lá: um
-// ?objetos=... na URL é descartado e volta pro formulário em branco). Copiar
-// o código pro clipboard antes de abrir a página poupa o usuário de digitar/
-// colar na mão, mesmo não eliminando o captcha.
-async function trackViaCorreios(code: string) {
-  try {
-    await navigator.clipboard.writeText(code);
-  } catch {
-    // Sem permissão de clipboard (raro) — segue mesmo assim, só sem copiar.
-  }
-  window.open('https://rastreamento.correios.com.br/app/index.php', '_blank', 'noopener,noreferrer');
 }
 
 const STAFF_ROLES: Role[] = [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN];
@@ -40,13 +25,11 @@ export function ScheduleCommentsSection({
   internalComments,
   clientComments,
   clientResponse,
-  trackingCode,
 }: ScheduleCommentsSectionProps) {
   const queryClient = useQueryClient();
   const [internalValue, setInternalValue] = useState(internalComments ?? '');
   const [clientValue, setClientValue] = useState(clientComments ?? '');
   const [responseValue, setResponseValue] = useState(clientResponse ?? '');
-  const [trackingValue, setTrackingValue] = useState(trackingCode ?? '');
 
   const { data: me } = useCurrentUser();
   const isStaff = !!me && STAFF_ROLES.includes(me.role);
@@ -57,7 +40,6 @@ export function ScheduleCommentsSection({
       internalComments?: string;
       clientComments?: string;
       clientResponse?: string;
-      trackingCode?: string;
     }) => schedulesApi.updateComments(scheduleId, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['schedules', scheduleId] }),
   });
@@ -79,39 +61,6 @@ export function ScheduleCommentsSection({
             onChange={(e) => setInternalValue(e.target.value)}
             onBlur={() => saveMutation.mutate({ internalComments: internalValue })}
           />
-        </div>
-      )}
-
-      {(isStaff || trackingCode) && (
-        <div className="field">
-          <label>Código de rastreio (Correios)</label>
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 0 }}>
-            Do envio das amostras pro laboratório parceiro.
-          </p>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {isStaff ? (
-              <input
-                className="input"
-                style={{ maxWidth: 280 }}
-                placeholder="Ex.: AA123456785BR"
-                value={trackingValue}
-                onChange={(e) => setTrackingValue(e.target.value)}
-                onBlur={() => saveMutation.mutate({ trackingCode: trackingValue })}
-              />
-            ) : (
-              <p style={{ margin: 0 }}>{trackingCode}</p>
-            )}
-            {(isStaff ? trackingValue : trackingCode) && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => trackViaCorreios((isStaff ? trackingValue : trackingCode) || '')}
-                title="Copia o código e abre o rastreamento dos Correios (peça pra colar o código lá — o site deles exige isso a cada consulta)"
-              >
-                Rastrear nos Correios
-              </button>
-            )}
-          </div>
         </div>
       )}
 

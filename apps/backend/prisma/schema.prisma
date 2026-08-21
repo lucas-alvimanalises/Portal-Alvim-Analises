@@ -89,6 +89,7 @@ model User {
   anpRegulatoryLimitsUpdated AnpRegulatoryLimit[]
   fieldReportsGenerated      FieldReport[]
   serviceResultsSummariesGenerated ServiceResultsSummary[]
+  trackingShipmentsCreated   TrackingShipment[] @relation("TrackingShipmentCreator")
 
   // Só populado quando role = CLIENT: um usuário-cliente (pessoa) pode ter
   // acesso a várias empresas (N:N) — ele escolhe qual visualizar por vez no
@@ -364,12 +365,6 @@ model Schedule {
   // Resposta do cliente ao comentário acima — só o cliente edita, a equipe
   // Alvim só lê.
   clientResponse   String? @db.Text
-
-  // Código de rastreio dos Correios do envio das amostras pro laboratório
-  // parceiro (pedido do usuário) — só a equipe Alvim edita, mas fica
-  // visível pro cliente também (não tem nada de sensível nisso, e ajuda o
-  // cliente a acompanhar quando a amostra vai chegar no laboratório).
-  trackingCode String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1070,4 +1065,35 @@ model ServiceResultsSummary {
   @@unique([scheduleId, version])
   @@index([scheduleId])
   @@map("service_results_summaries")
+}
+
+enum TrackingShipmentStatus {
+  IN_TRANSIT
+  DELIVERED
+}
+
+// Envio de amostras pelos Correios pro laboratório parceiro — entidade
+// própria (não presa a um agendamento específico, pedido do usuário: um
+// mesmo envio pode levar amostras de mais de um serviço, e o técnico só
+// precisa anotar o código + o que está mandando). "postedAt" é sempre o
+// momento do cadastro (não editável) — é o que a spec chama de "data da
+// postagem".
+model TrackingShipment {
+  id           String                 @id @default(uuid())
+  trackingCode String
+  description  String                 @db.Text
+  status       TrackingShipmentStatus @default(IN_TRANSIT)
+  postedAt     DateTime               @default(now())
+  // Preenchido só quando o status vira DELIVERED (ver MarkDeliveredUseCase)
+  // — null enquanto ainda "No transporte".
+  deliveredAt  DateTime?
+
+  createdById String
+  createdBy   User   @relation("TrackingShipmentCreator", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("tracking_shipments")
 }

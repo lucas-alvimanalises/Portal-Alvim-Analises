@@ -15,6 +15,7 @@ interface MenuItem {
 const SERVICOS_ITEMS: MenuItem[] = [
   { label: 'Agendamento', href: '/servicos/agendamento' },
   { label: 'Realizados', href: '/servicos/realizados' },
+  { label: 'Código de Rastreio', href: '/servicos/codigo-rastreio' },
 ];
 
 const AGENDA_ITEMS: MenuItem[] = [

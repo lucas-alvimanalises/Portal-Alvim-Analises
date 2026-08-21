@@ -21,14 +21,9 @@ export class UpdateScheduleCommentsUseCase {
     });
 
     // Cada lado só edita o próprio campo: o cliente só responde
-    // (clientResponse); a equipe Alvim só escreve os comentários dela e o
-    // código de rastreio (o cliente enxerga esse campo, só não edita).
+    // (clientResponse); a equipe Alvim só escreve os comentários dela.
     if (user.role === Role.CLIENT) {
-      if (
-        dto.internalComments !== undefined ||
-        dto.clientComments !== undefined ||
-        dto.trackingCode !== undefined
-      ) {
+      if (dto.internalComments !== undefined || dto.clientComments !== undefined) {
         throw new ForbiddenException('O cliente só pode editar a própria resposta.');
       }
     } else if (dto.clientResponse !== undefined) {

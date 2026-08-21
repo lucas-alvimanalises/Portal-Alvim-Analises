@@ -54,10 +54,6 @@ export interface ScheduleDto {
   clientComments: string | null;
   // Resposta do cliente ao comentário acima — só o cliente edita.
   clientResponse: string | null;
-  // Código de rastreio dos Correios do envio das amostras pro laboratório
-  // parceiro — só a equipe Alvim edita, mas visível a todo mundo (inclusive
-  // CLIENT) que enxerga o agendamento.
-  trackingCode: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -84,7 +80,6 @@ export interface UpdateScheduleCommentsPayload {
   internalComments?: string;
   clientComments?: string;
   clientResponse?: string;
-  trackingCode?: string;
 }
 
 export interface UpdateScheduleStatusPayload {

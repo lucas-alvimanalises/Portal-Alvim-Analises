@@ -21,3 +21,4 @@ export * from './plant-maintenance.types';
 export * from './anp-monthly-report.types';
 export * from './field-report.types';
 export * from './service-results-summary.types';
+export * from './tracking-shipment.types';

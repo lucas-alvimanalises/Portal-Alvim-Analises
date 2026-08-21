@@ -84,6 +84,14 @@ export const NAV_ITEMS: NavItem[] = [
         href: '/historico',
         roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT],
       },
+      // Log de envios de amostras pelos Correios pro laboratório parceiro —
+      // entidade própria, não presa a um agendamento (pedido do usuário).
+      // Sem acesso de Cliente (ferramenta operacional interna Alvim).
+      {
+        label: 'Código de Rastreio',
+        href: '/codigo-rastreio',
+        roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN],
+      },
     ],
   },
   {
