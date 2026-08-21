@@ -66,18 +66,37 @@ export function buildFieldReportPdfBuffer(input: FieldReportPdfInput): Buffer {
   });
 
   if (input.photos.length > 0) {
-    const photoSize = 180;
+    const DEFAULT_PHOTO_SIZE = 180;
+    // Abaixo disso a foto fica pequena demais pra servir de evidência —
+    // só nesse ponto desiste de caber na página 1 e pula pra página 2.
+    const MIN_PHOTO_SIZE = 110;
     const gap = 20;
     const columns = Math.min(2, input.photos.length);
     const rows = Math.ceil(input.photos.length / 2);
-    const gridWidth = columns * photoSize + (columns - 1) * gap;
-    const gridHeight = rows * photoSize + (rows - 1) * gap;
-    const startX = marginX + (usableWidth - gridWidth) / 2;
+    const gridHeightFor = (size: number) => rows * size + (rows - 1) * gap;
 
-    if (y + gridHeight > pageHeight - marginBottom) {
+    let photoSize = DEFAULT_PHOTO_SIZE;
+    const available = pageHeight - marginBottom - y - 10;
+
+    // Serviços com mais pontos de amostragem geram um resumo mais longo,
+    // que empurra "y" mais pra baixo — em vez de jogar a grade inteira pra
+    // uma página 2 (achado real: Relatório de Campo da Orizon/Jaboatão,
+    // 5 pontos, resumo bem mais longo que o normal), primeiro tenta
+    // diminuir a foto pra caber no que sobrou da página 1.
+    if (gridHeightFor(photoSize) > available) {
+      const fitted = (available - (rows - 1) * gap) / rows;
+      photoSize = Math.min(DEFAULT_PHOTO_SIZE, fitted);
+    }
+
+    if (photoSize < MIN_PHOTO_SIZE) {
       doc.addPage();
       y = 50;
+      photoSize = DEFAULT_PHOTO_SIZE;
     }
+
+    const gridWidth = columns * photoSize + (columns - 1) * gap;
+    const gridHeight = gridHeightFor(photoSize);
+    const startX = marginX + (usableWidth - gridWidth) / 2;
     y += 10;
 
     input.photos.forEach((photo, index) => {
