@@ -3,8 +3,8 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View, Press
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FIELD_CHECKLIST_SECTIONS } from '@portal-alvim/shared';
-import { schedulesApi } from '../../../../../lib/api/schedules.api';
-import { fieldChecklistsApi } from '../../../../../lib/api/field-checklists.api';
+import { schedulesApi } from '../../../../../../lib/api/schedules.api';
+import { fieldChecklistsApi } from '../../../../../../lib/api/field-checklists.api';
 
 // Check list de material de campo — mesmo conteúdo fixo do portal web (ver
 // FIELD_CHECKLIST_SECTIONS), cada item com uma quantidade em vez de

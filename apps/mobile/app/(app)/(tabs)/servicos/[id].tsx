@@ -21,14 +21,14 @@ import {
   SCHEDULE_DERIVED_STATUS_LABELS_PT,
   SampleDto,
 } from '@portal-alvim/shared';
-import { schedulesApi } from '../../../lib/api/schedules.api';
-import { servicePhotosApi, MobileUploadFile } from '../../../lib/api/service-photos.api';
-import { samplesApi } from '../../../lib/api/samples.api';
-import { custodyExtractionsApi } from '../../../lib/api/custody-extractions.api';
-import { API_URL, getApiErrorMessage } from '../../../lib/api/client';
-import { tokenStorage } from '../../../lib/auth/storage';
-import { getCurrentStampLocation, formatStampText } from '../../../lib/location-stamp';
-import { PhotoStampCapture } from '../../../components/PhotoStampCapture';
+import { schedulesApi } from '../../../../lib/api/schedules.api';
+import { servicePhotosApi, MobileUploadFile } from '../../../../lib/api/service-photos.api';
+import { samplesApi } from '../../../../lib/api/samples.api';
+import { custodyExtractionsApi } from '../../../../lib/api/custody-extractions.api';
+import { API_URL, getApiErrorMessage } from '../../../../lib/api/client';
+import { tokenStorage } from '../../../../lib/auth/storage';
+import { getCurrentStampLocation, formatStampText } from '../../../../lib/location-stamp';
+import { PhotoStampCapture } from '../../../../components/PhotoStampCapture';
 
 // Hub de campo pro serviço: reúne aqui o que o técnico precisa fazer no
 // local — fotos, comentários de coleta e, por composto/ponto configurado,

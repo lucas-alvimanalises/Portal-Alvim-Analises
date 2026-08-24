@@ -8,7 +8,7 @@ import {
   ScheduleDto,
   ScheduleStatus,
 } from '@portal-alvim/shared';
-import { schedulesApi } from '../../../lib/api/schedules.api';
+import { schedulesApi } from '../../../../lib/api/schedules.api';
 
 // Mesmo critério do portal web (ScheduleListView): serviços que ainda vão
 // acontecer — sai da lista automaticamente assim que "realizado" (ver

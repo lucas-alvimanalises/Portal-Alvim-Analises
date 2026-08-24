@@ -3,7 +3,7 @@ import { SectionList, Text, View, Pressable, StyleSheet, ActivityIndicator } fro
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
-import { schedulesApi } from '../../../lib/api/schedules.api';
+import { schedulesApi } from '../../../../lib/api/schedules.api';
 
 const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',

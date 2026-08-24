@@ -8,7 +8,7 @@ import {
   ScheduleDto,
   ScheduleStatus,
 } from '@portal-alvim/shared';
-import { schedulesApi } from '../../../lib/api/schedules.api';
+import { schedulesApi } from '../../../../lib/api/schedules.api';
 
 function formatPeriodo(schedule: ScheduleDto): string {
   const start = new Date(schedule.scheduledDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' });

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native';
 import * as Updates from 'expo-updates';
 import { ROLE_LABELS_PT } from '@portal-alvim/shared';
-import { useAuth } from '../../lib/auth/AuthContext';
+import { useAuth } from '../../../lib/auth/AuthContext';
 
 // updateId/createdAt vêm do próprio expo-updates (só existem de verdade num
 // build standalone, não no Expo Go) — mostrar aqui é a única forma de

@@ -17,8 +17,8 @@ import {
   TrackingShipmentDto,
   TrackingShipmentStatus,
 } from '@portal-alvim/shared';
-import { trackingShipmentsApi } from '../../../lib/api/tracking-shipments.api';
-import { getApiErrorMessage } from '../../../lib/api/client';
+import { trackingShipmentsApi } from '../../../../lib/api/tracking-shipments.api';
+import { getApiErrorMessage } from '../../../../lib/api/client';
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('pt-BR');

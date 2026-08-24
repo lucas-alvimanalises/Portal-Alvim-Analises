@@ -3,7 +3,7 @@ import { FlatList, Text, Pressable, View, StyleSheet, ActivityIndicator } from '
 import { Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { isScheduleRealized, ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
-import { schedulesApi } from '../../../../lib/api/schedules.api';
+import { schedulesApi } from '../../../../../lib/api/schedules.api';
 
 function formatPeriodo(schedule: ScheduleDto): string {
   if (schedule.dateConfirmed) {

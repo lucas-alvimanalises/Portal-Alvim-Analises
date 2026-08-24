@@ -4,9 +4,9 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { schedulesApi } from '../../../../lib/api/schedules.api';
-import { API_URL } from '../../../../lib/api/client';
-import { tokenStorage } from '../../../../lib/auth/storage';
+import { schedulesApi } from '../../../../../lib/api/schedules.api';
+import { API_URL } from '../../../../../lib/api/client';
+import { tokenStorage } from '../../../../../lib/auth/storage';
 
 function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfirmed: boolean): string {
   if (!dateConfirmed) {

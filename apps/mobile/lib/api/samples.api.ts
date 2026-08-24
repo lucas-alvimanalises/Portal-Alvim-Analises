@@ -1,9 +1,18 @@
-import { CreateSamplePayload, SampleDto, UpdateSamplePayload } from '@portal-alvim/shared';
+import {
+  CreateSamplePayload,
+  PendingCertificateDto,
+  SampleDto,
+  UpdateSamplePayload,
+} from '@portal-alvim/shared';
 import { apiClient } from './client';
 
 export const samplesApi = {
   listByClient: async (clientId: string) => {
     const { data } = await apiClient.get<SampleDto[]>(`/samples?clientId=${clientId}`);
+    return data;
+  },
+  listPendingCertificates: async () => {
+    const { data } = await apiClient.get<PendingCertificateDto[]>('/samples/pending-certificates');
     return data;
   },
   listBySchedule: async (scheduleId: string) => {
