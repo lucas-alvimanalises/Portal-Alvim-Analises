@@ -19,6 +19,12 @@ interface BiometricContextValue {
   setEnabled: (value: boolean) => Promise<boolean>;
   locked: boolean;
   unlock: () => Promise<boolean>;
+  // Câmera, seletor de galeria e a folha de compartilhar do sistema também
+  // tiram o app de "active" (mesmo evento de quando o usuário troca de app
+  // de verdade) — sem isso, tirar uma foto dentro de um serviço trancava a
+  // tela ao voltar da câmera (achado real, ver comentário mais abaixo).
+  // Envolver a chamada nativa com isso avisa "isso aqui não conta".
+  runWithoutLocking: <T>(action: () => Promise<T>) => Promise<T>;
 }
 
 const BiometricContext = createContext<BiometricContextValue | undefined>(undefined);
@@ -30,6 +36,10 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
   const [isSupported, setIsSupported] = useState(false);
   const [locked, setLocked] = useState(false);
   const appState = useRef(AppState.currentState);
+  // Contador (não estado — não deve causar re-render nem exigir recriar o
+  // listener) de quantas ações nativas suprimindo o lock estão em
+  // andamento agora. >0 = ignora a próxima transição de AppState.
+  const suppressCount = useRef(0);
 
   useEffect(() => {
     (async () => {
@@ -47,10 +57,22 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
   // Tranca de novo ao voltar do segundo plano (ex.: trocou de app e voltou)
   // — mesmo comportamento de apps bancários. Só existe sessão pra trancar
   // quando já tem usuário logado (ver Home/RootLayout).
+  //
+  // Achado real: abrir a câmera/galeria/folha de compartilhar do sistema
+  // (ImagePicker, Sharing) também dispara essa mesma transição de AppState
+  // (o app "sai de foco" enquanto a UI nativa cobre a tela) — sem a guarda
+  // de suppressCount, tirar uma foto dentro de Serviços trancava o app ao
+  // voltar da câmera, e como a tela de trava troca a árvore de navegação
+  // inteira (ver app/_layout.tsx), desbloquear voltava pra Home em vez de
+  // continuar no serviço.
   useEffect(() => {
     if (!enabled || !user) return;
     const subscription = AppState.addEventListener('change', (nextState) => {
-      if (appState.current === 'active' && nextState.match(/inactive|background/)) {
+      if (
+        appState.current === 'active' &&
+        nextState.match(/inactive|background/) &&
+        suppressCount.current === 0
+      ) {
         setLocked(true);
       }
       appState.current = nextState;
@@ -98,9 +120,18 @@ export function BiometricProvider({ children }: { children: ReactNode }) {
     return false;
   }
 
+  async function runWithoutLocking<T>(action: () => Promise<T>): Promise<T> {
+    suppressCount.current += 1;
+    try {
+      return await action();
+    } finally {
+      suppressCount.current -= 1;
+    }
+  }
+
   return (
     <BiometricContext.Provider
-      value={{ settingsLoaded, enabled, isSupported, setEnabled, locked, unlock }}
+      value={{ settingsLoaded, enabled, isSupported, setEnabled, locked, unlock, runWithoutLocking }}
     >
       {children}
     </BiometricContext.Provider>
