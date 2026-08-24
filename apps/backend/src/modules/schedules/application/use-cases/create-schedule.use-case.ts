@@ -2,12 +2,14 @@ import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { CreateScheduleDto } from '../dto/create-schedule.dto';
 import { SCHEDULE_REPOSITORY, ScheduleRepository } from '../../domain/schedule.repository';
 import { PlantMaintenancesService } from '../../../plant-maintenances/plant-maintenances.service';
+import { NotificationsService } from '../../../notifications/notifications.service';
 
 @Injectable()
 export class CreateScheduleUseCase {
   constructor(
     @Inject(SCHEDULE_REPOSITORY) private readonly scheduleRepository: ScheduleRepository,
     private readonly plantMaintenancesService: PlantMaintenancesService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async execute(dto: CreateScheduleDto) {
@@ -29,10 +31,43 @@ export class CreateScheduleUseCase {
     }
 
     const { overrideMaintenanceWarning: _override, ...scheduleData } = dto;
-    return this.scheduleRepository.create({
+    const schedule = await this.scheduleRepository.create({
       ...scheduleData,
       scheduledDate: new Date(dto.scheduledDate),
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
     });
+
+    // Notifica todos os técnicos já alocados na criação — mesmo evento do
+    // sino do app ("Você foi alocado no serviço X").
+    for (const { technician } of schedule.technicians ?? []) {
+      this.notifyAssignment(schedule, technician.id);
+    }
+
+    return schedule;
+  }
+
+  private notifyAssignment(
+    schedule: Awaited<ReturnType<ScheduleRepository['create']>>,
+    technicianId: string,
+  ) {
+    const clientName = schedule.client?.companyName ?? 'Cliente';
+    const serviceTypeName = schedule.serviceType?.name ?? 'Serviço';
+    const dateLabel = schedule.dateConfirmed
+      ? schedule.scheduledDate.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
+      : schedule.scheduledDate.toLocaleDateString('pt-BR', {
+          timeZone: 'UTC',
+          month: 'long',
+          year: 'numeric',
+        });
+    // Melhor esforço: uma falha ao gravar a notificação nunca deve derrubar
+    // a criação/edição do agendamento em si.
+    this.notificationsService
+      .notify(
+        technicianId,
+        'SCHEDULE_ASSIGNED',
+        `Você foi alocado no serviço ${clientName} — ${serviceTypeName} (${dateLabel}).`,
+        `/servicos/${schedule.id}`,
+      )
+      .catch(() => {});
   }
 }

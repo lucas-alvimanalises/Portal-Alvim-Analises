@@ -1,6 +1,5 @@
 import { ReactNode, useState } from 'react';
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,6 +16,7 @@ import { Role, ScheduleDto } from '@portal-alvim/shared';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { schedulesApi } from '../../../lib/api/schedules.api';
 import { samplesApi } from '../../../lib/api/samples.api';
+import { notificationsApi } from '../../../lib/api/notifications.api';
 import { radii, shadow, spacing } from '../../../lib/theme';
 import { ColorPalette } from '../../../lib/theme/palettes';
 import { useThemeColors } from '../../../lib/theme/ThemeContext';
@@ -49,6 +49,10 @@ export default function HomeScreen() {
     queryKey: ['pending-certificates'],
     queryFn: samplesApi.listPendingCertificates,
   });
+  const unreadCountQuery = useQuery({
+    queryKey: ['notifications-unread-count'],
+    queryFn: notificationsApi.unreadCount,
+  });
   const servicosItems = useServicosMenuItems();
   const agendaItems = useAgendaMenuItems();
 
@@ -60,6 +64,7 @@ export default function HomeScreen() {
       queryClient.invalidateQueries({ queryKey: ['schedules'] }),
       queryClient.invalidateQueries({ queryKey: ['tracking-shipments'] }),
       queryClient.invalidateQueries({ queryKey: ['pending-certificates'] }),
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] }),
     ]);
     setRefreshing(false);
   }
@@ -78,9 +83,8 @@ export default function HomeScreen() {
       <Header
         name={user?.name ?? ''}
         insetTop={insets.top}
-        onPressBell={() =>
-          Alert.alert('Notificações', 'Central de notificações em breve.')
-        }
+        hasUnreadNotifications={!!unreadCountQuery.data}
+        onPressBell={() => router.push('/notificacoes' as never)}
         onPressAvatar={() => router.push('/perfil' as never)}
       />
       <ScrollView
@@ -152,11 +156,13 @@ export default function HomeScreen() {
 function Header({
   name,
   insetTop,
+  hasUnreadNotifications,
   onPressBell,
   onPressAvatar,
 }: {
   name: string;
   insetTop: number;
+  hasUnreadNotifications: boolean;
   onPressBell: () => void;
   onPressAvatar: () => void;
 }) {
@@ -178,6 +184,7 @@ function Header({
           style={({ pressed }) => [styles.bellButton, pressed && styles.bellButtonPressed]}
         >
           <Bell size={15} strokeWidth={2} color={colors.textMuted} />
+          {hasUnreadNotifications && <View style={styles.bellDot} />}
         </Pressable>
         <Pressable onPress={onPressAvatar} style={styles.avatar}>
           <Text style={styles.avatarText}>{getInitials(name)}</Text>
@@ -420,8 +427,20 @@ function createStyles(colors: ColorPalette) {
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
   },
   bellButtonPressed: { backgroundColor: colors.surfaceMuted },
+  bellDot: {
+    position: 'absolute',
+    top: 7,
+    right: 7,
+    width: 8,
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.danger,
+    borderWidth: 1.6,
+    borderColor: colors.surface,
+  },
   avatar: {
     width: 36,
     height: 36,

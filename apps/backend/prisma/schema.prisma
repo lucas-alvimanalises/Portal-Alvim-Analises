@@ -952,6 +952,9 @@ model Notification {
   user      User     @relation(fields: [userId], references: [id])
   type      String
   message   String
+  // Rota relativa pra abrir ao tocar na notificação (ex.: "/servicos/{id}")
+  // — opcional porque nem todo tipo de notificação tem um destino óbvio.
+  link      String?
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 

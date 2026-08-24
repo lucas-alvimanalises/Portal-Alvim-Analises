@@ -3,6 +3,7 @@ import { ClientsModule } from '../clients/clients.module';
 import { UsersModule } from '../users/users.module';
 import { MailModule } from '../mail/mail.module';
 import { PlantMaintenancesModule } from '../plant-maintenances/plant-maintenances.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { SchedulesController } from './infrastructure/schedules.controller';
 import { PrismaScheduleRepository } from './infrastructure/prisma-schedule.repository';
 import { SCHEDULE_REPOSITORY } from './domain/schedule.repository';
@@ -17,7 +18,7 @@ import { SendScheduleToClientUseCase } from './application/use-cases/send-schedu
 import { ScheduleDerivedStatusService } from './application/schedule-derived-status.service';
 
 @Module({
-  imports: [ClientsModule, UsersModule, MailModule, PlantMaintenancesModule],
+  imports: [ClientsModule, UsersModule, MailModule, PlantMaintenancesModule, NotificationsModule],
   controllers: [SchedulesController],
   providers: [
     { provide: SCHEDULE_REPOSITORY, useClass: PrismaScheduleRepository },

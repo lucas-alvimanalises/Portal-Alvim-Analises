@@ -32,6 +32,7 @@ export default function AppLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="meus-servicos" options={{ title: 'Meus Serviços' }} />
       <Stack.Screen name="cadeia-custodia/[extractionId]" options={{ title: 'Cadeia de Custódia' }} />
+      <Stack.Screen name="notificacoes" options={{ title: 'Notificações' }} />
     </Stack>
   );
 }
