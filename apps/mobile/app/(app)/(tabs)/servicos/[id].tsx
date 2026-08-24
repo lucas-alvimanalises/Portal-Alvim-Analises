@@ -31,7 +31,6 @@ import { getCurrentStampLocation, formatStampText } from '../../../../lib/locati
 import { PhotoStampCapture } from '../../../../components/PhotoStampCapture';
 import { ColorPalette } from '../../../../lib/theme/palettes';
 import { useThemeColors } from '../../../../lib/theme/ThemeContext';
-import { useBiometric } from '../../../../lib/biometric/BiometricContext';
 
 // Hub de campo pro serviço: reúne aqui o que o técnico precisa fazer no
 // local — fotos, comentários de coleta e, por composto/ponto configurado,
@@ -100,7 +99,6 @@ function AmostraSlot({
   const queryClient = useQueryClient();
   const colors = useThemeColors();
   const styles = createStyles(colors);
-  const { runWithoutLocking } = useBiometric();
   const [isOpen, setIsOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -141,18 +139,13 @@ function AmostraSlot({
 
   async function scanCustody() {
     if (!sample) return;
-    // runWithoutLocking: abrir a câmera do sistema também tira o app de
-    // "active" — sem isso, a tela de biometria trancava ao voltar da
-    // câmera (achado real, ver BiometricContext).
-    const result = await runWithoutLocking(async () => {
-      const permission = await ImagePicker.requestCameraPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permissão necessária', 'Autorize o acesso à câmera pra continuar.');
-        return null;
-      }
-      return ImagePicker.launchCameraAsync({ quality: 0.8 });
-    });
-    if (!result || result.canceled) return;
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissão necessária', 'Autorize o acesso à câmera pra continuar.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+    if (result.canceled) return;
 
     setScanning(true);
     try {
@@ -253,7 +246,6 @@ export default function ServicoDetalheScreen() {
   const queryClient = useQueryClient();
   const colors = useThemeColors();
   const styles = createStyles(colors);
-  const { runWithoutLocking } = useBiometric();
   const [authHeader, setAuthHeader] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -304,25 +296,21 @@ export default function ServicoDetalheScreen() {
   }
 
   async function pickAndUpload(source: 'camera' | 'library') {
-    // runWithoutLocking: câmera/galeria do sistema também tiram o app de
-    // "active" — sem isso, a tela de biometria trancava ao voltar (achado
-    // real, ver BiometricContext).
-    const result = await runWithoutLocking(async () => {
-      const permission =
-        source === 'camera'
-          ? await ImagePicker.requestCameraPermissionsAsync()
-          : await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permissão necessária', 'Autorize o acesso pra continuar.');
-        return null;
-      }
+    const permission =
+      source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permissão necessária', 'Autorize o acesso pra continuar.');
+      return;
+    }
 
-      return source === 'camera'
-        ? ImagePicker.launchCameraAsync({ quality: 0.7 })
-        : ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsMultipleSelection: true });
-    });
+    const result =
+      source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ quality: 0.7 })
+        : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, allowsMultipleSelection: true });
 
-    if (!result || result.canceled) return;
+    if (result.canceled) return;
 
     // Só carimba data/hora/localização em foto tirada agora pela câmera —
     // uma foto escolhida da galeria pode ter sido tirada em outro momento/

@@ -9,7 +9,6 @@ import { API_URL } from '../../../../../lib/api/client';
 import { tokenStorage } from '../../../../../lib/auth/storage';
 import { ColorPalette } from '../../../../../lib/theme/palettes';
 import { useThemeColors } from '../../../../../lib/theme/ThemeContext';
-import { useBiometric } from '../../../../../lib/biometric/BiometricContext';
 
 function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfirmed: boolean): string {
   if (!dateConfirmed) {
@@ -31,7 +30,6 @@ export default function OrganizarServicoDetailScreen() {
   const router = useRouter();
   const colors = useThemeColors();
   const styles = createStyles(colors);
-  const { runWithoutLocking } = useBiometric();
   const [downloadingCustody, setDownloadingCustody] = useState(false);
 
   const { data: schedule, isLoading } = useQuery({
@@ -53,14 +51,10 @@ export default function OrganizarServicoDetailScreen() {
       }
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        // runWithoutLocking: a folha de compartilhar do sistema também tira
-        // o app de "active" — mesmo achado da câmera, ver BiometricContext.
-        await runWithoutLocking(() =>
-          Sharing.shareAsync(result.uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: 'Cadeia de Custódia em branco',
-          }),
-        );
+        await Sharing.shareAsync(result.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Cadeia de Custódia em branco',
+        });
       } else {
         Alert.alert('Baixado', `PDF salvo em ${result.uri}, mas este dispositivo não suporta compartilhar/abrir direto.`);
       }
