@@ -23,26 +23,17 @@ export function getNextSchedule(schedules: ScheduleDto[]): ScheduleDto | null {
   return open[0] ?? null;
 }
 
-export interface TechnicianScheduleGroup {
-  technician: { id: string; name: string };
-  schedules: ScheduleDto[];
-}
-
-// Visão do Admin na Home: em vez de "o próximo serviço" (global, de
-// qualquer um), agrupa os serviços abertos por técnico — cada um vê os
-// PRÓPRIOS próximos serviços, em ordem, ou uma lista vazia se não tiver
-// nenhum agendado (ver handoff/pedido do usuário).
-export function groupOpenSchedulesByTechnician(
-  schedules: ScheduleDto[],
-  technicians: { id: string; name: string }[],
-): TechnicianScheduleGroup[] {
-  const open = getOpenSchedules(schedules);
-  return technicians.map((technician) => ({
-    technician,
-    schedules: open
-      .filter((s) => s.technicians.some((t) => t.id === technician.id))
-      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)),
-  }));
+// Visão do Admin na Home: um carrossel único com todos os serviços abertos
+// de todos os técnicos, ordenados pela data mais próxima — arrastar pro
+// lado mostra o próximo compromisso em ordem cronológica, seja de quem for
+// (pedido do usuário, substitui o agrupamento por técnico anterior). Só
+// entram serviços com data já confirmada (dateConfirmed) — "mês previsto"
+// sem dia certo fica de fora ("mostre apenas os próximos serviços que já
+// têm data agendada").
+export function getUpcomingConfirmedSchedules(schedules: ScheduleDto[]): ScheduleDto[] {
+  return getOpenSchedules(schedules)
+    .filter((s) => s.dateConfirmed)
+    .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate));
 }
 
 export function countSchedulesWithoutTechnician(schedules: ScheduleDto[]): number {
