@@ -2,19 +2,21 @@ import { Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 import { Home, CalendarDays, ListChecks, User } from 'lucide-react-native';
-import { colors, typography } from '../../../lib/theme';
+import { typography } from '../../../lib/theme';
+import { ColorPalette } from '../../../lib/theme/palettes';
+import { useThemeColors } from '../../../lib/theme/ThemeContext';
 
 // Tab bar persistente (ver handoff da tela inicial, seção 6) — Início leva
 // à Home redesenhada; Agenda/Serviços abrem um hub simples reaproveitando
 // as mesmas linhas já usadas na Home (sem inventar telas novas); Perfil é
 // onde "Sair" mora agora (tirado do cabeçalho global).
-function TabIcon(Icon: typeof Home) {
+function TabIcon(Icon: typeof Home, colors: ColorPalette) {
   return ({ focused }: { focused: boolean }) => (
     <Icon size={18} strokeWidth={2} color={focused ? colors.primary : colors.iconInactive} />
   );
 }
 
-function TabLabel(label: string) {
+function TabLabel(label: string, colors: ColorPalette) {
   return ({ focused }: { focused: boolean }) => (
     <Text
       style={{
@@ -30,6 +32,7 @@ function TabLabel(label: string) {
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
 
   return (
     <Tabs
@@ -48,19 +51,33 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: TabIcon(Home), tabBarLabel: TabLabel('Início') }}
+        options={{ tabBarIcon: TabIcon(Home, colors), tabBarLabel: TabLabel('Início', colors) }}
       />
       <Tabs.Screen
         name="agenda"
-        options={{ tabBarIcon: TabIcon(CalendarDays), tabBarLabel: TabLabel('Agenda') }}
+        options={{
+          tabBarIcon: TabIcon(CalendarDays, colors),
+          tabBarLabel: TabLabel('Agenda', colors),
+        }}
       />
       <Tabs.Screen
         name="servicos"
-        options={{ tabBarIcon: TabIcon(ListChecks), tabBarLabel: TabLabel('Serviços') }}
+        options={{
+          tabBarIcon: TabIcon(ListChecks, colors),
+          tabBarLabel: TabLabel('Serviços', colors),
+        }}
       />
       <Tabs.Screen
         name="perfil"
-        options={{ headerShown: true, title: 'Perfil', tabBarIcon: TabIcon(User), tabBarLabel: TabLabel('Perfil') }}
+        options={{
+          headerShown: true,
+          title: 'Perfil',
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.text,
+          headerShadowVisible: false,
+          tabBarIcon: TabIcon(User, colors),
+          tabBarLabel: TabLabel('Perfil', colors),
+        }}
       />
     </Tabs>
   );

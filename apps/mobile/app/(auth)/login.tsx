@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../lib/auth/AuthContext';
+import { ColorPalette } from '../../lib/theme/palettes';
+import { useThemeColors } from '../../lib/theme/ThemeContext';
 
 // require() em vez de import — padrão do Metro bundler pra imagens estáticas
 // (React Native/Expo não tem declaração de tipo pra módulos .jpg por
@@ -10,6 +12,8 @@ const logo = require('../../assets/logo.jpg');
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +40,7 @@ export default function LoginScreen() {
       <TextInput
         style={styles.input}
         placeholder="E-mail"
+        placeholderTextColor={colors.textMuted}
         autoCapitalize="none"
         keyboardType="email-address"
         value={email}
@@ -44,6 +49,7 @@ export default function LoginScreen() {
       <TextInput
         style={styles.input}
         placeholder="Senha"
+        placeholderTextColor={colors.textMuted}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -58,26 +64,29 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#f5f6f8' },
-  logo: { width: '100%', height: 140, alignSelf: 'center', marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: '700', marginBottom: 4, textAlign: 'center' },
-  subtitle: { fontSize: 14, color: '#6b7280', marginBottom: 24, textAlign: 'center' },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonText: { color: '#fff', fontWeight: '600' },
-  error: { color: '#b3261e', marginBottom: 12 },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: colors.bg },
+    logo: { width: '100%', height: 140, alignSelf: 'center', marginBottom: 16 },
+    title: { fontSize: 22, fontWeight: '700', marginBottom: 4, textAlign: 'center', color: colors.text },
+    subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 24, textAlign: 'center' },
+    input: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 12,
+      color: colors.text,
+    },
+    button: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      padding: 14,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    buttonText: { color: '#fff', fontWeight: '600' },
+    error: { color: colors.danger, marginBottom: 12 },
+  });
+}

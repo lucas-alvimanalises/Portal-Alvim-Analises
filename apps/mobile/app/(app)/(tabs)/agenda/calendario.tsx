@@ -5,6 +5,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../lib/api/schedules.api';
 import { AllocateScheduleModal } from '../../../../components/AllocateScheduleModal';
+import { ColorPalette } from '../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../lib/theme/ThemeContext';
 
 const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -43,6 +45,8 @@ function buildSections(schedules: ScheduleDto[], year: number, month: number): D
 }
 
 export default function CalendarioScreen() {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -81,6 +85,7 @@ export default function CalendarioScreen() {
         </View>
       ) : (
         <SectionList
+          style={{ backgroundColor: colors.bg }}
           contentContainerStyle={styles.list}
           sections={sections}
           keyExtractor={(item) => item.id}
@@ -113,47 +118,50 @@ export default function CalendarioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  nav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e5e9',
-  },
-  navButton: { color: '#1f5f4d', fontWeight: '600' },
-  navLabel: { fontSize: 15, fontWeight: '700' },
-  list: { padding: 16, gap: 8 },
-  empty: { textAlign: 'center', color: '#6b7280', marginTop: 40 },
-  sectionHeader: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    marginTop: 12,
-    marginBottom: 6,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    marginBottom: 8,
-    gap: 2,
-  },
-  client: { fontSize: 15, fontWeight: '700' },
-  meta: { color: '#6b7280', fontSize: 13 },
-  allocateButton: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: '#1f5f4d',
-    borderRadius: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  allocateButtonText: { fontSize: 12, fontWeight: '600', color: '#1f5f4d' },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+    nav: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    navButton: { color: colors.primary, fontWeight: '600' },
+    navLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+    list: { padding: 16, gap: 8, backgroundColor: colors.bg },
+    empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40 },
+    sectionHeader: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      marginTop: 12,
+      marginBottom: 6,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 8,
+      gap: 2,
+    },
+    client: { fontSize: 15, fontWeight: '700', color: colors.text },
+    meta: { color: colors.textMuted, fontSize: 13 },
+    allocateButton: {
+      marginTop: 8,
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+    },
+    allocateButtonText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  });
+}

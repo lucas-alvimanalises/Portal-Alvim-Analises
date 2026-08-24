@@ -4,6 +4,8 @@ import { Stack, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { isScheduleRealized, ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../../lib/api/schedules.api';
+import { ColorPalette } from '../../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../../lib/theme/ThemeContext';
 
 function formatPeriodo(schedule: ScheduleDto): string {
   if (schedule.dateConfirmed) {
@@ -17,6 +19,8 @@ function formatPeriodo(schedule: ScheduleDto): string {
 }
 
 function ScheduleRow({ schedule, onPress }: { schedule: ScheduleDto; onPress: () => void }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   return (
     <Pressable style={styles.card} onPress={onPress}>
       <View>
@@ -37,6 +41,8 @@ function ScheduleRow({ schedule, onPress }: { schedule: ScheduleDto; onPress: ()
 // impressão de etiqueta Zebra continua exclusiva do portal web.
 export default function OrganizarServicoListScreen() {
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [showPrevious, setShowPrevious] = useState(false);
   const { data, isLoading } = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.list });
 
@@ -62,6 +68,7 @@ export default function OrganizarServicoListScreen() {
     <>
       <Stack.Screen options={{ title: 'Organizar Serviço' }} />
       <FlatList
+        style={{ backgroundColor: colors.bg }}
         contentContainerStyle={styles.list}
         data={visible}
         keyExtractor={(item) => item.id}
@@ -83,22 +90,24 @@ export default function OrganizarServicoListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  list: { padding: 16, gap: 8 },
-  empty: { textAlign: 'center', color: '#6b7280', marginTop: 40 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  client: { fontSize: 15, fontWeight: '700' },
-  meta: { color: '#6b7280', fontSize: 12 },
-  toggle: { alignItems: 'center', paddingVertical: 12 },
-  toggleText: { color: '#1f5f4d', fontWeight: '600' },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+    list: { padding: 16, gap: 8, backgroundColor: colors.bg },
+    empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 8,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    client: { fontSize: 15, fontWeight: '700', color: colors.text },
+    meta: { color: colors.textMuted, fontSize: 12 },
+    toggle: { alignItems: 'center', paddingVertical: 12 },
+    toggleText: { color: colors.primary, fontWeight: '600' },
+  });
+}

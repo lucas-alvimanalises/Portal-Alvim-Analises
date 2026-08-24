@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, ActivityIndicator, Switch } from 'react-native';
 import * as Updates from 'expo-updates';
 import { ROLE_LABELS_PT } from '@portal-alvim/shared';
 import { useAuth } from '../../../lib/auth/AuthContext';
+import { useTheme } from '../../../lib/theme/ThemeContext';
 
 // updateId/createdAt vêm do próprio expo-updates (só existem de verdade num
 // build standalone, não no Expo Go) — mostrar aqui é a única forma de
@@ -23,6 +24,7 @@ function formatUpdateInfo(): string {
 
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
+  const { scheme, colors, toggleTheme } = useTheme();
   const [checking, setChecking] = useState(false);
 
   async function checkForUpdate() {
@@ -50,24 +52,44 @@ export default function PerfilScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.name}>{user?.name}</Text>
-      <Text style={styles.meta}>{user?.email}</Text>
-      <Text style={styles.meta}>{user ? ROLE_LABELS_PT[user.role] : ''}</Text>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.name, { color: colors.text }]}>{user?.name}</Text>
+      <Text style={[styles.meta, { color: colors.textMuted }]}>{user?.email}</Text>
+      <Text style={[styles.meta, { color: colors.textMuted }]}>
+        {user ? ROLE_LABELS_PT[user.role] : ''}
+      </Text>
 
-      <View style={styles.updateBox}>
-        <Text style={styles.updateLabel}>Versão do app</Text>
-        <Text style={styles.updateValue}>{formatUpdateInfo()}</Text>
-        <Pressable style={styles.updateButton} onPress={checkForUpdate} disabled={checking}>
+      <View style={[styles.box, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.themeRow}>
+          <Text style={[styles.boxLabel, { color: colors.textMuted }]}>Modo escuro</Text>
+          <Switch
+            value={scheme === 'dark'}
+            onValueChange={toggleTheme}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+      </View>
+
+      <View style={[styles.box, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.boxLabel, { color: colors.textMuted }]}>Versão do app</Text>
+        <Text style={[styles.updateValue, { color: colors.text }]}>{formatUpdateInfo()}</Text>
+        <Pressable
+          style={[styles.updateButton, { borderColor: colors.primary }]}
+          onPress={checkForUpdate}
+          disabled={checking}
+        >
           {checking ? (
-            <ActivityIndicator color="#1f5f4d" />
+            <ActivityIndicator color={colors.primary} />
           ) : (
-            <Text style={styles.updateButtonText}>Verificar atualizações</Text>
+            <Text style={[styles.updateButtonText, { color: colors.primary }]}>
+              Verificar atualizações
+            </Text>
           )}
         </Pressable>
       </View>
 
-      <Pressable style={styles.button} onPress={logout}>
+      <Pressable style={[styles.button, { backgroundColor: colors.danger }]} onPress={logout}>
         <Text style={styles.buttonText}>Sair</Text>
       </Pressable>
     </View>
@@ -75,34 +97,31 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#f5f6f8' },
+  container: { flex: 1, padding: 24 },
   name: { fontSize: 20, fontWeight: '700' },
-  meta: { color: '#6b7280', marginTop: 4 },
+  meta: { marginTop: 4 },
   button: {
     marginTop: 24,
-    backgroundColor: '#b3261e',
     borderRadius: 8,
     padding: 14,
     alignItems: 'center',
   },
   buttonText: { color: '#fff', fontWeight: '600' },
-  updateBox: {
+  box: {
     marginTop: 24,
-    backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e5e9',
     gap: 4,
   },
-  updateLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  updateValue: { fontSize: 13, color: '#1f2937', marginBottom: 8 },
+  themeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  boxLabel: { fontSize: 12, fontWeight: '600' },
+  updateValue: { fontSize: 13, marginBottom: 8 },
   updateButton: {
     borderWidth: 1,
-    borderColor: '#1f5f4d',
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  updateButtonText: { color: '#1f5f4d', fontWeight: '600', fontSize: 13 },
+  updateButtonText: { fontWeight: '600', fontSize: 13 },
 });

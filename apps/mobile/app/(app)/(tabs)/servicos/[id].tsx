@@ -29,6 +29,8 @@ import { API_URL, getApiErrorMessage } from '../../../../lib/api/client';
 import { tokenStorage } from '../../../../lib/auth/storage';
 import { getCurrentStampLocation, formatStampText } from '../../../../lib/location-stamp';
 import { PhotoStampCapture } from '../../../../components/PhotoStampCapture';
+import { ColorPalette } from '../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../lib/theme/ThemeContext';
 
 // Hub de campo pro serviço: reúne aqui o que o técnico precisa fazer no
 // local — fotos, comentários de coleta e, por composto/ponto configurado,
@@ -95,6 +97,8 @@ function AmostraSlot({
 }: AmostraSlotProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [isOpen, setIsOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -170,7 +174,7 @@ function AmostraSlot({
         <Text style={styles.slotLabel}>{label}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {sample ? (
-            <View style={[styles.miniBadge, { backgroundColor: '#eef2f1' }]}>
+            <View style={[styles.miniBadge, { backgroundColor: colors.primarySoft }]}>
               <Text style={styles.miniBadgeText}>{ANALYSIS_STATUS_LABELS_PT[sample.analysisStatus]}</Text>
             </View>
           ) : (
@@ -240,6 +244,8 @@ function AmostraSlot({
 export default function ServicoDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [authHeader, setAuthHeader] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -383,7 +389,7 @@ export default function ServicoDetalheScreen() {
     );
   }
 
-  const colors = schedule ? SCHEDULE_DERIVED_STATUS_COLORS[schedule.derivedStatus] : null;
+  const statusColors = schedule ? SCHEDULE_DERIVED_STATUS_COLORS[schedule.derivedStatus] : null;
 
   // Agrupa amostras já existentes por ponto+composto, ordenadas por criação
   // — a i-ésima amostra criada pro par vira o slot i (mesma lógica de
@@ -419,9 +425,9 @@ export default function ServicoDetalheScreen() {
             <Text style={styles.meta}>
               {formatPeriodo(schedule.scheduledDate, schedule.endDate, schedule.dateConfirmed)}
             </Text>
-            {colors && (
-              <View style={[styles.badge, { backgroundColor: colors.background }]}>
-                <Text style={[styles.badgeText, { color: colors.text }]}>
+            {statusColors && (
+              <View style={[styles.badge, { backgroundColor: statusColors.background }]}>
+                <Text style={[styles.badgeText, { color: statusColors.text }]}>
                   {SCHEDULE_DERIVED_STATUS_LABELS_PT[schedule.derivedStatus]}
                 </Text>
               </View>
@@ -551,93 +557,96 @@ export default function ServicoDetalheScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { padding: 16, gap: 16 },
-  header: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    gap: 4,
-  },
-  client: { fontSize: 18, fontWeight: '700' },
-  meta: { color: '#6b7280', fontSize: 13 },
-  badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-  },
-  sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  sectionHint: { fontSize: 12, color: '#6b7280', marginBottom: 10 },
-  empty: { fontSize: 13, color: '#6b7280', marginTop: 8 },
-  pointTitle: { fontSize: 14, fontWeight: '700', color: '#1f2937' },
-  photoButtonsRow: { flexDirection: 'row', gap: 10 },
-  photoButton: {
-    flex: 1,
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  photoButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  photoCard: { width: 140, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e5e9' },
-  photoImage: { width: 140, height: 100 },
-  photoDelete: { padding: 6, alignItems: 'center' },
-  photoDeleteText: { color: '#b3261e', fontSize: 12, fontWeight: '600' },
-  textarea: {
-    backgroundColor: '#f5f6f8',
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 90,
-    textAlignVertical: 'top',
-  },
-  saving: { fontSize: 11, color: '#6b7280', marginTop: 6 },
-  slot: { borderWidth: 1, borderColor: '#e2e5e9', borderRadius: 6 },
-  slotHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-  },
-  slotLabel: { fontSize: 13, color: '#1f2937', flexShrink: 1 },
-  slotEmptyLabel: { fontSize: 12, color: '#9ca3af' },
-  slotChevron: { fontSize: 11, color: '#9ca3af' },
-  slotBody: { padding: 10, paddingTop: 0 },
-  miniBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  miniBadgeText: { fontSize: 11, fontWeight: '600', color: '#1f5f4d' },
-  actionButton: {
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  actionButtonSecondary: {
-    borderWidth: 1,
-    borderColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  actionButtonSecondaryText: { color: '#1f5f4d', fontWeight: '600', fontSize: 13 },
-  custodyTitle: { fontSize: 13, fontWeight: '700', color: '#1f2937' },
-  custodyStatusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  custodyStatusText: { fontSize: 13, fontWeight: '600' },
-  custodyFailedHint: { fontSize: 11, color: '#b91c1c' },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+    container: { padding: 16, gap: 16, backgroundColor: colors.bg },
+    header: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 4,
+    },
+    client: { fontSize: 18, fontWeight: '700', color: colors.text },
+    meta: { color: colors.textMuted, fontSize: 13 },
+    badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
+    badgeText: { fontSize: 12, fontWeight: '600' },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4, color: colors.text },
+    sectionHint: { fontSize: 12, color: colors.textMuted, marginBottom: 10 },
+    empty: { fontSize: 13, color: colors.textMuted, marginTop: 8 },
+    pointTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
+    photoButtonsRow: { flexDirection: 'row', gap: 10 },
+    photoButton: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    photoButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+    photoCard: { width: 140, borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+    photoImage: { width: 140, height: 100 },
+    photoDelete: { padding: 6, alignItems: 'center' },
+    photoDeleteText: { color: colors.danger, fontSize: 12, fontWeight: '600' },
+    textarea: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 12,
+      minHeight: 90,
+      textAlignVertical: 'top',
+      color: colors.text,
+    },
+    saving: { fontSize: 11, color: colors.textMuted, marginTop: 6 },
+    slot: { borderWidth: 1, borderColor: colors.border, borderRadius: 6 },
+    slotHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 10,
+    },
+    slotLabel: { fontSize: 13, color: colors.text, flexShrink: 1 },
+    slotEmptyLabel: { fontSize: 12, color: colors.textMuted },
+    slotChevron: { fontSize: 11, color: colors.textMuted },
+    slotBody: { padding: 10, paddingTop: 0 },
+    miniBadge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+    miniBadgeText: { fontSize: 11, fontWeight: '600', color: colors.primary },
+    actionButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+    actionButtonSecondary: {
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    actionButtonSecondaryText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+    custodyTitle: { fontSize: 13, fontWeight: '700', color: colors.text },
+    custodyStatusRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderRadius: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    custodyStatusText: { fontSize: 13, fontWeight: '600' },
+    custodyFailedHint: { fontSize: 11, color: colors.danger },
+  });
+}

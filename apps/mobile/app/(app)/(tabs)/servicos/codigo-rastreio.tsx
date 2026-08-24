@@ -19,6 +19,8 @@ import {
 } from '@portal-alvim/shared';
 import { trackingShipmentsApi } from '../../../../lib/api/tracking-shipments.api';
 import { getApiErrorMessage } from '../../../../lib/api/client';
+import { ColorPalette } from '../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../lib/theme/ThemeContext';
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('pt-BR');
@@ -35,6 +37,8 @@ function openCorreios() {
 // módulo nativo novo só pra isso).
 export default function CodigoRastreioScreen() {
   const queryClient = useQueryClient();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [showForm, setShowForm] = useState(false);
   const [trackingCode, setTrackingCode] = useState('');
   const [description, setDescription] = useState('');
@@ -83,6 +87,7 @@ export default function CodigoRastreioScreen() {
             <TextInput
               style={styles.input}
               placeholder="Ex.: AA123456785BR"
+              placeholderTextColor={colors.textMuted}
               value={trackingCode}
               onChangeText={setTrackingCode}
               autoCapitalize="characters"
@@ -91,6 +96,7 @@ export default function CodigoRastreioScreen() {
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Ex.: Amostras de Siloxanos e VOCs — Cliente X"
+              placeholderTextColor={colors.textMuted}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -119,13 +125,13 @@ export default function CodigoRastreioScreen() {
             keyExtractor={(item) => item.id}
             ListEmptyComponent={<Text style={styles.empty}>Nenhum código de rastreio cadastrado ainda.</Text>}
             renderItem={({ item }: { item: TrackingShipmentDto }) => {
-              const colors = TRACKING_SHIPMENT_STATUS_COLORS[item.status];
+              const statusColors = TRACKING_SHIPMENT_STATUS_COLORS[item.status];
               return (
                 <View style={styles.card}>
                   <View style={styles.cardHeader}>
                     <Text style={styles.code}>{item.trackingCode}</Text>
-                    <View style={[styles.badge, { backgroundColor: colors.background }]}>
-                      <Text style={[styles.badgeText, { color: colors.text }]}>
+                    <View style={[styles.badge, { backgroundColor: statusColors.background }]}>
+                      <Text style={[styles.badgeText, { color: statusColors.text }]}>
                         {TRACKING_SHIPMENT_STATUS_LABELS_PT[item.status]}
                       </Text>
                     </View>
@@ -162,58 +168,62 @@ export default function CodigoRastreioScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  primaryButton: {
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  disabled: { opacity: 0.6 },
-  formCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    padding: 16,
-    marginTop: 12,
-    gap: 4,
-  },
-  label: { fontSize: 13, fontWeight: '600', color: '#6b7280', marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 6,
-    padding: 10,
-    fontSize: 14,
-    marginTop: 4,
-  },
-  textArea: { minHeight: 70, textAlignVertical: 'top' },
-  error: { color: '#b3261e', fontSize: 13, marginTop: 8 },
-  empty: { textAlign: 'center', color: '#6b7280', marginTop: 40 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    padding: 16,
-    gap: 6,
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  code: { fontSize: 15, fontWeight: '700' },
-  badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  description: { fontSize: 14 },
-  meta: { fontSize: 12, color: '#6b7280' },
-  actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  secondaryButtonText: { fontSize: 13, fontWeight: '600', color: '#1c1f24' },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { flex: 1, padding: 16, backgroundColor: colors.bg },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    primaryButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+    disabled: { opacity: 0.6 },
+    formCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      marginTop: 12,
+      gap: 4,
+    },
+    label: { fontSize: 13, fontWeight: '600', color: colors.textMuted, marginTop: 8 },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      padding: 10,
+      fontSize: 14,
+      marginTop: 4,
+      color: colors.text,
+      backgroundColor: colors.surface,
+    },
+    textArea: { minHeight: 70, textAlignVertical: 'top' },
+    error: { color: colors.danger, fontSize: 13, marginTop: 8 },
+    empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 16,
+      gap: 6,
+    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+    code: { fontSize: 15, fontWeight: '700', color: colors.text },
+    badge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 },
+    badgeText: { fontSize: 12, fontWeight: '600' },
+    description: { fontSize: 14, color: colors.text },
+    meta: { fontSize: 12, color: colors.textMuted },
+    actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginTop: 4 },
+    secondaryButton: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+    },
+    secondaryButtonText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  });
+}

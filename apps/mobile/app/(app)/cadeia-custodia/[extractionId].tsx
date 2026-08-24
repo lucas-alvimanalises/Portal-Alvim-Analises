@@ -21,6 +21,8 @@ import { custodyExtractionsApi } from '../../../lib/api/custody-extractions.api'
 import { servicePhotosApi } from '../../../lib/api/service-photos.api';
 import { API_URL, getApiErrorMessage } from '../../../lib/api/client';
 import { tokenStorage } from '../../../lib/auth/storage';
+import { ColorPalette } from '../../../lib/theme/palettes';
+import { useThemeColors } from '../../../lib/theme/ThemeContext';
 
 const LOW_CONFIDENCE_THRESHOLD = 0.7;
 
@@ -38,6 +40,8 @@ export default function CadeiaDeCustodiaRevisaoScreen() {
   const { extractionId } = useLocalSearchParams<{ extractionId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [authHeader, setAuthHeader] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, CustodyExtractedValue> | null>(null);
   const [table, setTable] = useState<Record<string, Record<string, CustodyExtractedValue>> | null>(null);
@@ -308,68 +312,72 @@ export default function CadeiaDeCustodiaRevisaoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { padding: 16, gap: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    gap: 10,
-  },
-  infoText: { fontSize: 13, color: '#1f2937' },
-  errorText: { fontSize: 13, color: '#b91c1c' },
-  scanImage: { width: '100%', height: 280, backgroundColor: '#f1f5f9' },
-  field: { gap: 4 },
-  fieldLabel: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
-  fieldReadOnlyValue: { fontSize: 13, color: '#1f2937' },
-  input: {
-    backgroundColor: '#f5f6f8',
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 8,
-    padding: 10,
-    fontSize: 13,
-  },
-  inputLowConfidence: { borderColor: '#e0a800', backgroundColor: '#fff8e1' },
-  tableTitle: { fontSize: 14, fontWeight: '700', marginBottom: 6, color: '#1f2937' },
-  sectionHint: { fontSize: 12, color: '#6b7280', marginTop: 2 },
-  tableRowCard: {
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 6,
-    padding: 8,
-    marginBottom: 8,
-  },
-  tableRowLabel: { fontSize: 12, fontWeight: '700', marginBottom: 6, color: '#1f2937' },
-  tableCell: { width: 100 },
-  tableCellLabel: { fontSize: 10, color: '#6b7280', marginBottom: 2 },
-  tableCellInput: {
-    backgroundColor: '#f5f6f8',
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 6,
-    padding: 8,
-    fontSize: 12,
-  },
-  photoOption: { borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: '#e2e5e9' },
-  photoOptionSelected: { borderWidth: 3, borderColor: '#1f5f4d' },
-  photoOptionImage: { width: 90, height: 70 },
-  actionButton: {
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-  actionButtonSecondary: {
-    borderWidth: 1,
-    borderColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  actionButtonSecondaryText: { color: '#1f5f4d', fontWeight: '600', fontSize: 13 },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+    container: { padding: 16, gap: 16, paddingBottom: 40, backgroundColor: colors.bg },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 10,
+    },
+    infoText: { fontSize: 13, color: colors.text },
+    errorText: { fontSize: 13, color: colors.danger },
+    scanImage: { width: '100%', height: 280, backgroundColor: colors.surfaceMuted },
+    field: { gap: 4 },
+    fieldLabel: { fontSize: 12, fontWeight: '600', color: colors.textMuted },
+    fieldReadOnlyValue: { fontSize: 13, color: colors.text },
+    input: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      padding: 10,
+      fontSize: 13,
+      color: colors.text,
+    },
+    inputLowConfidence: { borderColor: '#e0a800', backgroundColor: 'rgba(224, 168, 0, 0.15)' },
+    tableTitle: { fontSize: 14, fontWeight: '700', marginBottom: 6, color: colors.text },
+    sectionHint: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+    tableRowCard: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      padding: 8,
+      marginBottom: 8,
+    },
+    tableRowLabel: { fontSize: 12, fontWeight: '700', marginBottom: 6, color: colors.text },
+    tableCell: { width: 100 },
+    tableCellLabel: { fontSize: 10, color: colors.textMuted, marginBottom: 2 },
+    tableCellInput: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      padding: 8,
+      fontSize: 12,
+      color: colors.text,
+    },
+    photoOption: { borderRadius: 6, overflow: 'hidden', borderWidth: 1, borderColor: colors.border },
+    photoOptionSelected: { borderWidth: 3, borderColor: colors.primary },
+    photoOptionImage: { width: 90, height: 70 },
+    actionButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+    actionButtonSecondary: {
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    actionButtonSecondaryText: { color: colors.primary, fontWeight: '600', fontSize: 13 },
+  });
+}

@@ -4,6 +4,8 @@ import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { isScheduleRealized, ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../lib/api/schedules.api';
+import { ColorPalette } from '../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../lib/theme/ThemeContext';
 
 const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -74,6 +76,8 @@ function buildSummaries(schedules: ScheduleDto[], year: number, month: number): 
 }
 
 function CompoundCard({ summary }: { summary: CompoundSummary }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [expanded, setExpanded] = useState(false);
   return (
     <Pressable style={styles.card} onPress={() => setExpanded((current) => !current)}>
@@ -104,6 +108,8 @@ function CompoundCard({ summary }: { summary: CompoundSummary }) {
 }
 
 export default function CronogramaAmostrasScreen() {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [cursor, setCursor] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -141,6 +147,7 @@ export default function CronogramaAmostrasScreen() {
         </View>
       ) : (
         <FlatList
+          style={{ backgroundColor: colors.bg }}
           contentContainerStyle={styles.list}
           data={summaries}
           keyExtractor={(item) => item.compoundId}
@@ -152,35 +159,38 @@ export default function CronogramaAmostrasScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  nav: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e5e9',
-  },
-  navButton: { color: '#1f5f4d', fontWeight: '600' },
-  navLabel: { fontSize: 15, fontWeight: '700' },
-  list: { padding: 16, gap: 12 },
-  empty: { textAlign: 'center', color: '#6b7280', marginTop: 40 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    marginBottom: 12,
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  compoundLabel: { fontSize: 13, color: '#6b7280' },
-  total: { fontSize: 28, fontWeight: '700', marginTop: 4 },
-  chevron: { fontSize: 12, color: '#6b7280', marginTop: 4 },
-  breakdown: { marginTop: 12, borderTopWidth: 1, borderTopColor: '#e2e5e9', paddingTop: 8 },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  breakdownLabel: { fontSize: 13, color: '#1f2937', flex: 1 },
-  breakdownPoint: { color: '#6b7280' },
-  breakdownQty: { fontSize: 13, fontWeight: '700' },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+    nav: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    navButton: { color: colors.primary, fontWeight: '600' },
+    navLabel: { fontSize: 15, fontWeight: '700', color: colors.text },
+    list: { padding: 16, gap: 12, backgroundColor: colors.bg },
+    empty: { textAlign: 'center', color: colors.textMuted, marginTop: 40 },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 12,
+    },
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    compoundLabel: { fontSize: 13, color: colors.textMuted },
+    total: { fontSize: 28, fontWeight: '700', marginTop: 4, color: colors.text },
+    chevron: { fontSize: 12, color: colors.textMuted, marginTop: 4 },
+    breakdown: { marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 },
+    breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+    breakdownLabel: { fontSize: 13, color: colors.text, flex: 1 },
+    breakdownPoint: { color: colors.textMuted },
+    breakdownQty: { fontSize: 13, fontWeight: '700', color: colors.text },
+  });
+}

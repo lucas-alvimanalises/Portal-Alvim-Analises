@@ -6,7 +6,9 @@ import { Role, ScheduleDto, UserDto } from '@portal-alvim/shared';
 import { schedulesApi } from '../lib/api/schedules.api';
 import { usersApi } from '../lib/api/users.api';
 import { getApiErrorMessage } from '../lib/api/client';
-import { colors, radii, spacing } from '../lib/theme';
+import { radii, spacing } from '../lib/theme';
+import { ColorPalette } from '../lib/theme/palettes';
+import { useThemeColors } from '../lib/theme/ThemeContext';
 
 const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -38,6 +40,8 @@ export function AllocateScheduleModal({
   onClose,
 }: AllocateScheduleModalProps) {
   const queryClient = useQueryClient();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const scheduledDate = new Date(schedule.scheduledDate);
   const [cursor, setCursor] = useState(() => {
     if (schedule.dateConfirmed) {
@@ -201,7 +205,8 @@ export function AllocateScheduleModal({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.surface,
@@ -293,4 +298,5 @@ const styles = StyleSheet.create({
   },
   confirmButtonDisabled: { opacity: 0.5 },
   confirmButtonText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-});
+  });
+}

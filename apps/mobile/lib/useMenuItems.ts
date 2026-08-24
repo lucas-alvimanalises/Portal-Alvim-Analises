@@ -11,7 +11,7 @@ import {
 import { TrackingShipmentStatus } from '@portal-alvim/shared';
 import { schedulesApi } from './api/schedules.api';
 import { trackingShipmentsApi } from './api/tracking-shipments.api';
-import { colors } from './theme';
+import { useThemeColors } from './theme/ThemeContext';
 import {
   countSamplesThisMonth,
   countSchedulesWithoutTechnician,
@@ -25,6 +25,7 @@ import { MenuRowItem } from '../components/MenuListCard';
 // contadores em 3 lugares (ver handoff da tela inicial, seções 3 e 4).
 export function useServicosMenuItems(): MenuRowItem[] {
   const router = useRouter();
+  const colors = useThemeColors();
   const schedulesQuery = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.list });
   const shipmentsQuery = useQuery({ queryKey: ['tracking-shipments'], queryFn: trackingShipmentsApi.list });
 
@@ -67,6 +68,7 @@ export function useServicosMenuItems(): MenuRowItem[] {
 
 export function useAgendaMenuItems(): MenuRowItem[] {
   const router = useRouter();
+  const colors = useThemeColors();
   const schedulesQuery = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.list });
 
   const withoutTechnicianCount = schedulesQuery.data

@@ -7,6 +7,8 @@ import * as Sharing from 'expo-sharing';
 import { schedulesApi } from '../../../../../lib/api/schedules.api';
 import { API_URL } from '../../../../../lib/api/client';
 import { tokenStorage } from '../../../../../lib/auth/storage';
+import { ColorPalette } from '../../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../../lib/theme/ThemeContext';
 
 function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfirmed: boolean): string {
   if (!dateConfirmed) {
@@ -26,6 +28,8 @@ function formatPeriodo(scheduledDate: string, endDate: string | null, dateConfir
 export default function OrganizarServicoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
   const [downloadingCustody, setDownloadingCustody] = useState(false);
 
   const { data: schedule, isLoading } = useQuery({
@@ -124,35 +128,37 @@ export default function OrganizarServicoDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  container: { padding: 16, gap: 12 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    gap: 4,
-  },
-  title: { fontSize: 18, fontWeight: '700' },
-  meta: { color: '#6b7280', fontSize: 13 },
-  pointTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  compoundRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
-  },
-  compoundName: { fontSize: 13, color: '#1f2937' },
-  compoundQty: { fontSize: 13, color: '#6b7280', fontWeight: '600' },
-  note: { fontSize: 12, color: '#9ca3af', textAlign: 'center', marginTop: 4 },
-  actionButton: {
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
+    container: { padding: 16, gap: 12, backgroundColor: colors.bg },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 4,
+    },
+    title: { fontSize: 18, fontWeight: '700', color: colors.text },
+    meta: { color: colors.textMuted, fontSize: 13 },
+    pointTitle: { fontSize: 15, fontWeight: '700', marginBottom: 4, color: colors.text },
+    compoundRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 4,
+      borderTopWidth: 1,
+      borderTopColor: colors.surfaceMuted,
+    },
+    compoundName: { fontSize: 13, color: colors.text },
+    compoundQty: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
+    note: { fontSize: 12, color: colors.textMuted, textAlign: 'center', marginTop: 4 },
+    actionButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    actionButtonText: { color: '#fff', fontWeight: '600', fontSize: 13 },
+  });
+}

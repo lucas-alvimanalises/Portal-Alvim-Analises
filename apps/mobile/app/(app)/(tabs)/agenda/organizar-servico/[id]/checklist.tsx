@@ -5,6 +5,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FIELD_CHECKLIST_SECTIONS } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../../../lib/api/schedules.api';
 import { fieldChecklistsApi } from '../../../../../../lib/api/field-checklists.api';
+import { ColorPalette } from '../../../../../../lib/theme/palettes';
+import { useThemeColors } from '../../../../../../lib/theme/ThemeContext';
 
 // Check list de material de campo — mesmo conteúdo fixo do portal web (ver
 // FIELD_CHECKLIST_SECTIONS), cada item com uma quantidade em vez de
@@ -13,6 +15,8 @@ import { fieldChecklistsApi } from '../../../../../../lib/api/field-checklists.a
 export default function ChecklistCampoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
 
   const { data: schedule } = useQuery({
     queryKey: ['schedules', id],
@@ -105,38 +109,41 @@ export default function ChecklistCampoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 12, paddingBottom: 40 },
-  subtitle: { fontSize: 14, color: '#6b7280', marginBottom: 4 },
-  progress: { fontSize: 12, color: '#6b7280', marginBottom: 4 },
-  section: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    gap: 6,
-  },
-  sectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  qtyInput: {
-    width: 56,
-    borderWidth: 1,
-    borderColor: '#e2e5e9',
-    borderRadius: 6,
-    paddingVertical: 6,
-    textAlign: 'center',
-    backgroundColor: '#f5f6f8',
-  },
-  itemLabel: { fontSize: 13, color: '#1f2937', flexShrink: 1 },
-  saveButton: {
-    backgroundColor: '#1f5f4d',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  saveButtonText: { color: '#fff', fontWeight: '600' },
-  savedText: { color: '#1f5f4d', fontSize: 13, textAlign: 'center' },
-  errorText: { color: '#b3261e', fontSize: 13, textAlign: 'center' },
-});
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: { padding: 16, gap: 12, paddingBottom: 40, backgroundColor: colors.bg },
+    subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 4 },
+    progress: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
+    section: {
+      backgroundColor: colors.surface,
+      borderRadius: 8,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 6,
+    },
+    sectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 2, color: colors.text },
+    itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    qtyInput: {
+      width: 56,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 6,
+      paddingVertical: 6,
+      textAlign: 'center',
+      backgroundColor: colors.surfaceMuted,
+      color: colors.text,
+    },
+    itemLabel: { fontSize: 13, color: colors.text, flexShrink: 1 },
+    saveButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    saveButtonText: { color: '#fff', fontWeight: '600' },
+    savedText: { color: colors.primary, fontSize: 13, textAlign: 'center' },
+    errorText: { color: colors.danger, fontSize: 13, textAlign: 'center' },
+  });
+}

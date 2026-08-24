@@ -18,7 +18,9 @@ import { useAuth } from '../../../lib/auth/AuthContext';
 import { schedulesApi } from '../../../lib/api/schedules.api';
 import { samplesApi } from '../../../lib/api/samples.api';
 import { usersApi } from '../../../lib/api/users.api';
-import { colors, radii, shadow, spacing } from '../../../lib/theme';
+import { radii, shadow, spacing } from '../../../lib/theme';
+import { ColorPalette } from '../../../lib/theme/palettes';
+import { useThemeColors } from '../../../lib/theme/ThemeContext';
 import { getFirstName, getGreeting, getInitials } from '../../../lib/format';
 import {
   formatScheduleDatePill,
@@ -71,6 +73,8 @@ export default function HomeScreen() {
   const nextSchedule = schedules ? getNextSchedule(schedules) : undefined;
   const pendingCertificatesCount = pendingCertificatesQuery.data?.length;
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
 
   const technicianGroups: TechnicianScheduleGroup[] =
     schedules && usersQuery.data
@@ -172,6 +176,9 @@ function Header({
   onPressBell: () => void;
   onPressAvatar: () => void;
 }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+
   return (
     <View style={[styles.header, { paddingTop: insetTop + 6 }]}>
       <View style={styles.headerText}>
@@ -197,6 +204,9 @@ function Header({
 }
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.section}>
       <Text style={styles.sectionLabel}>{label}</Text>
@@ -220,6 +230,9 @@ function NextScheduleCard({
   onOpenService: (id: string) => void;
   onOrganize: (id: string) => void;
 }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+
   if (loading) {
     return (
       <View style={styles.nextCard}>
@@ -276,6 +289,9 @@ function ScheduleSummaryCard({
   onOpenService: (id: string) => void;
   onOrganize: (id: string) => void;
 }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.nextCard}>
       <View style={styles.nextCardTop}>
@@ -327,6 +343,9 @@ function TechnicianSchedulesCarousel({
   onOpenService: (id: string) => void;
   onOrganize: (id: string) => void;
 }) {
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
+
   if (loading) {
     return (
       <View style={styles.nextCard}>
@@ -382,6 +401,8 @@ function TechnicianRow({
   const { width: windowWidth } = useWindowDimensions();
   const cardWidth = windowWidth - spacing[5] * 2;
   const [activePage, setActivePage] = useState(0);
+  const colors = useThemeColors();
+  const styles = createStyles(colors);
 
   return (
     <View style={{ gap: spacing[2] }}>
@@ -427,7 +448,8 @@ function TechnicianRow({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     backgroundColor: colors.surface,
@@ -540,4 +562,5 @@ const styles = StyleSheet.create({
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: radii.pill, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary },
-});
+  });
+}

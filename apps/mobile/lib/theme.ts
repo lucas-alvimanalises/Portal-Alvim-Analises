@@ -1,25 +1,6 @@
-// Tokens de design do app mobile — cores, espaçamento, raios e tipografia.
-// Antes desse arquivo, cada tela repetia os hexadecimais na mão em
-// StyleSheet.create (ver handoff da tela inicial). Consumir daqui em telas
-// novas; telas antigas continuam com cor fixa até serem revisitadas — não é
-// preciso migrar tudo de uma vez. Pré-requisito pro app mobile ganhar modo
-// escuro no futuro (o portal web já tem, ver apps/web/app/globals.css).
-export const colors = {
-  bg: '#f5f6f8',
-  surface: '#ffffff',
-  border: '#e2e5e9',
-  text: '#1c1f24',
-  textMuted: '#6b7280',
-  iconInactive: '#9aa2af',
-  primary: '#1f5f4d',
-  primaryPressed: '#164539',
-  primarySoft: '#eaf3f0',
-  danger: '#b3261e',
-  dangerSoft: '#fbeceb',
-  surfaceMuted: '#f1f5f9',
-  skeleton: '#e2e5e9',
-} as const;
-
+// Tokens de design do app mobile — espaçamento, raios e tipografia (cores
+// ficam em lib/theme/ThemeContext.tsx via useThemeColors(), já que elas
+// mudam com o modo claro/escuro — o resto aqui é igual nos dois temas).
 export const spacing = {
   1: 4,
   2: 8,

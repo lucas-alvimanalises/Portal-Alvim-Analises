@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, DimensionValue, Easing } from 'react-native';
-import { colors, radii } from '../lib/theme';
+import { radii } from '../lib/theme';
+import { useThemeColors } from '../lib/theme/ThemeContext';
 
 // Placeholder de carregamento com pulso de opacidade — mesmo espírito do
 // `.skeleton` do portal web (nunca texto "Carregando..."), ver handoff da
@@ -14,6 +15,7 @@ export function Skeleton({
   height: number;
   borderRadius?: number;
 }) {
+  const colors = useThemeColors();
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
