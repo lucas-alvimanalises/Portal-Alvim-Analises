@@ -1,15 +1,32 @@
 import { ReactNode, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, ChevronRight } from 'lucide-react-native';
+import { Role, ScheduleDto } from '@portal-alvim/shared';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { schedulesApi } from '../../../lib/api/schedules.api';
 import { samplesApi } from '../../../lib/api/samples.api';
+import { usersApi } from '../../../lib/api/users.api';
 import { colors, radii, shadow, spacing } from '../../../lib/theme';
 import { getFirstName, getGreeting, getInitials } from '../../../lib/format';
-import { formatScheduleDatePill, formatScheduleSubtitle, getNextSchedule } from '../../../lib/home-summary';
+import {
+  formatScheduleDatePill,
+  formatScheduleSubtitle,
+  getNextSchedule,
+  groupOpenSchedulesByTechnician,
+  TechnicianScheduleGroup,
+} from '../../../lib/home-summary';
 import { useAgendaMenuItems, useServicosMenuItems } from '../../../lib/useMenuItems';
 import { MenuListCard } from '../../../components/MenuListCard';
 import { Skeleton } from '../../../components/Skeleton';
@@ -25,11 +42,16 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
+  const isAdmin = user?.role === Role.ADMIN;
+
   const schedulesQuery = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.list });
   const pendingCertificatesQuery = useQuery({
     queryKey: ['pending-certificates'],
     queryFn: samplesApi.listPendingCertificates,
   });
+  // Só o Admin vê a visão "por técnico" (ver groupOpenSchedulesByTechnician)
+  // — evita buscar a lista de usuários à toa pros outros perfis.
+  const usersQuery = useQuery({ queryKey: ['users'], queryFn: usersApi.list, enabled: isAdmin });
   const servicosItems = useServicosMenuItems();
   const agendaItems = useAgendaMenuItems();
 
@@ -50,6 +72,16 @@ export default function HomeScreen() {
   const pendingCertificatesCount = pendingCertificatesQuery.data?.length;
   const insets = useSafeAreaInsets();
 
+  const technicianGroups: TechnicianScheduleGroup[] =
+    schedules && usersQuery.data
+      ? groupOpenSchedulesByTechnician(
+          schedules,
+          usersQuery.data
+            .filter((u) => u.role === Role.TECHNICIAN && u.active)
+            .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+        )
+      : [];
+
   return (
     <View style={styles.screen}>
       <Header
@@ -64,14 +96,30 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        <NextScheduleCard
-          loading={schedulesQuery.isLoading}
-          isError={schedulesQuery.isError}
-          onRetry={() => schedulesQuery.refetch()}
-          schedule={nextSchedule}
-          onOpenService={(id) => router.push(`/servicos/${id}` as never)}
-          onOrganize={(id) => router.push(`/agenda/organizar-servico/${id}` as never)}
-        />
+        {isAdmin ? (
+          <Section label="Próximos Serviços">
+            <TechnicianSchedulesCarousel
+              loading={schedulesQuery.isLoading || usersQuery.isLoading}
+              isError={schedulesQuery.isError || usersQuery.isError}
+              onRetry={() => {
+                schedulesQuery.refetch();
+                usersQuery.refetch();
+              }}
+              groups={technicianGroups}
+              onOpenService={(id) => router.push(`/servicos/${id}` as never)}
+              onOrganize={(id) => router.push(`/agenda/organizar-servico/${id}` as never)}
+            />
+          </Section>
+        ) : (
+          <NextScheduleCard
+            loading={schedulesQuery.isLoading}
+            isError={schedulesQuery.isError}
+            onRetry={() => schedulesQuery.refetch()}
+            schedule={nextSchedule}
+            onOpenService={(id) => router.push(`/servicos/${id}` as never)}
+            onOrganize={(id) => router.push(`/agenda/organizar-servico/${id}` as never)}
+          />
+        )}
 
         <Section label="Serviços">
           <MenuListCard items={servicosItems} />
@@ -205,10 +253,34 @@ function NextScheduleCard({
   }
 
   return (
+    <ScheduleSummaryCard
+      schedule={schedule}
+      showLabel
+      onOpenService={onOpenService}
+      onOrganize={onOrganize}
+    />
+  );
+}
+
+// Visual do card populado — extraído do NextScheduleCard (perfil não-Admin,
+// serviço único) pra ser reaproveitado também dentro do carrossel por
+// técnico do Admin (ver TechnicianSchedulesCarousel), sem duplicar estilo.
+function ScheduleSummaryCard({
+  schedule,
+  showLabel,
+  onOpenService,
+  onOrganize,
+}: {
+  schedule: ScheduleDto;
+  showLabel: boolean;
+  onOpenService: (id: string) => void;
+  onOrganize: (id: string) => void;
+}) {
+  return (
     <View style={styles.nextCard}>
       <View style={styles.nextCardTop}>
-        <Text style={styles.sectionLabel}>Próximo serviço</Text>
-        <View style={styles.datePill}>
+        {showLabel && <Text style={styles.sectionLabel}>Próximo serviço</Text>}
+        <View style={[styles.datePill, !showLabel && { marginLeft: 'auto' }]}>
           <Text style={styles.datePillText}>{formatScheduleDatePill(schedule)}</Text>
         </View>
       </View>
@@ -232,6 +304,125 @@ function NextScheduleCard({
           <Text style={styles.secondaryActionText}>Organizar</Text>
         </Pressable>
       </View>
+    </View>
+  );
+}
+
+// Visão do Admin: em vez de um único "próximo serviço" global, um bloco por
+// técnico — cada um mostra o(s) próprio(s) próximo(s) serviço(s) (vazio se
+// não tiver nenhum), com swipe em carrossel quando tiver mais de um (ver
+// handoff/pedido do usuário).
+function TechnicianSchedulesCarousel({
+  loading,
+  isError,
+  onRetry,
+  groups,
+  onOpenService,
+  onOrganize,
+}: {
+  loading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  groups: TechnicianScheduleGroup[];
+  onOpenService: (id: string) => void;
+  onOrganize: (id: string) => void;
+}) {
+  if (loading) {
+    return (
+      <View style={styles.nextCard}>
+        <Skeleton width="100%" height={14} />
+        <Skeleton width="70%" height={18} />
+        <Skeleton width="90%" height={14} />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.nextCard}>
+        <Text style={styles.rowSubtitle}>Não foi possível carregar os próximos serviços.</Text>
+        <Pressable style={styles.retryButton} onPress={onRetry}>
+          <Text style={styles.retryButtonText}>Tentar novamente</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (groups.length === 0) {
+    return (
+      <View style={styles.nextCard}>
+        <Text style={styles.rowSubtitle}>Nenhum técnico cadastrado.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ gap: spacing[4] }}>
+      {groups.map((group) => (
+        <TechnicianRow
+          key={group.technician.id}
+          group={group}
+          onOpenService={onOpenService}
+          onOrganize={onOrganize}
+        />
+      ))}
+    </View>
+  );
+}
+
+function TechnicianRow({
+  group,
+  onOpenService,
+  onOrganize,
+}: {
+  group: TechnicianScheduleGroup;
+  onOpenService: (id: string) => void;
+  onOrganize: (id: string) => void;
+}) {
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = windowWidth - spacing[5] * 2;
+  const [activePage, setActivePage] = useState(0);
+
+  return (
+    <View style={{ gap: spacing[2] }}>
+      <Text style={styles.technicianName}>{group.technician.name}</Text>
+      {group.schedules.length === 0 ? (
+        <View style={styles.nextCard}>
+          <Text style={styles.rowSubtitle}>Nenhum serviço agendado.</Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) =>
+              setActivePage(Math.round(e.nativeEvent.contentOffset.x / cardWidth))
+            }
+          >
+            {group.schedules.map((schedule) => (
+              <View key={schedule.id} style={{ width: cardWidth }}>
+                <ScheduleSummaryCard
+                  schedule={schedule}
+                  showLabel={false}
+                  onOpenService={onOpenService}
+                  onOrganize={onOrganize}
+                />
+              </View>
+            ))}
+          </ScrollView>
+          {group.schedules.length > 1 && (
+            <View style={styles.dotsRow}>
+              {group.schedules.map((_, index) => (
+                <View
+                  key={index}
+                  style={[styles.dot, index === activePage && styles.dotActive]}
+                />
+              ))}
+            </View>
+          )}
+        </>
+      )}
     </View>
   );
 }
@@ -345,4 +536,8 @@ const styles = StyleSheet.create({
   textBlock: { flex: 1, gap: 2, minWidth: 0 },
   rowTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
   rowSubtitle: { fontSize: 13, color: colors.textMuted },
+  technicianName: { fontSize: 14, fontWeight: '700', color: colors.text },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: radii.pill, backgroundColor: colors.border },
+  dotActive: { backgroundColor: colors.primary },
 });

@@ -23,6 +23,28 @@ export function getNextSchedule(schedules: ScheduleDto[]): ScheduleDto | null {
   return open[0] ?? null;
 }
 
+export interface TechnicianScheduleGroup {
+  technician: { id: string; name: string };
+  schedules: ScheduleDto[];
+}
+
+// Visão do Admin na Home: em vez de "o próximo serviço" (global, de
+// qualquer um), agrupa os serviços abertos por técnico — cada um vê os
+// PRÓPRIOS próximos serviços, em ordem, ou uma lista vazia se não tiver
+// nenhum agendado (ver handoff/pedido do usuário).
+export function groupOpenSchedulesByTechnician(
+  schedules: ScheduleDto[],
+  technicians: { id: string; name: string }[],
+): TechnicianScheduleGroup[] {
+  const open = getOpenSchedules(schedules);
+  return technicians.map((technician) => ({
+    technician,
+    schedules: open
+      .filter((s) => s.technicians.some((t) => t.id === technician.id))
+      .sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate)),
+  }));
+}
+
 export function countSchedulesWithoutTechnician(schedules: ScheduleDto[]): number {
   return getOpenSchedules(schedules).filter((s) => s.technicians.length === 0).length;
 }

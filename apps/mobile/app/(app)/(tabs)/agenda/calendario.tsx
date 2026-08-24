@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../lib/api/schedules.api';
+import { AllocateScheduleModal } from '../../../../components/AllocateScheduleModal';
 
 const MONTH_LABELS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -16,8 +17,10 @@ interface DaySection {
 }
 
 // Versão simplificada do Calendário do portal web (sem arrastar/soltar nem
-// cores por técnico) — lista os serviços do mês agrupados por dia, incluindo
-// tanto os já confirmados (data exata) quanto os só com mês previsto.
+// cores por técnico — aloca via botão + grid de dias tocável, ver
+// AllocateScheduleModal) — lista os serviços do mês agrupados por dia,
+// incluindo tanto os já confirmados (data exata) quanto os só com mês
+// previsto.
 function buildSections(schedules: ScheduleDto[], year: number, month: number): DaySection[] {
   const byDay = new Map<number, ScheduleDto[]>();
 
@@ -44,6 +47,7 @@ export default function CalendarioScreen() {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
+  const [allocating, setAllocating] = useState<ScheduleDto | null>(null);
 
   const { data, isLoading } = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.list });
 
@@ -89,8 +93,20 @@ export default function CalendarioScreen() {
               <Text style={styles.meta}>
                 {item.technicians.length > 0 ? item.technicians.map((t) => t.name).join(', ') : 'Sem técnico definido'}
               </Text>
+              <Pressable style={styles.allocateButton} onPress={() => setAllocating(item)}>
+                <Text style={styles.allocateButtonText}>Alocar técnico e data</Text>
+              </Pressable>
             </View>
           )}
+        />
+      )}
+
+      {allocating && (
+        <AllocateScheduleModal
+          schedule={allocating}
+          initialYear={cursor.year}
+          initialMonth={cursor.month}
+          onClose={() => setAllocating(null)}
         />
       )}
     </>
@@ -130,4 +146,14 @@ const styles = StyleSheet.create({
   },
   client: { fontSize: 15, fontWeight: '700' },
   meta: { color: '#6b7280', fontSize: 13 },
+  allocateButton: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#1f5f4d',
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  allocateButtonText: { fontSize: 12, fontWeight: '600', color: '#1f5f4d' },
 });
