@@ -57,10 +57,10 @@ export function AllocateScheduleModal({
   );
 
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
-  // Gestor também pode ser designado responsável de campo, além de Técnico
-  // — mesmo critério do seletor equivalente no portal web.
+  // Gestor e Admin também podem ser designados responsáveis de campo, além
+  // de Técnico — mesmo critério do seletor equivalente no portal web.
   const technicianOptions = (users ?? []).filter(
-    (u) => u.active && (u.role === Role.TECHNICIAN || u.role === Role.MANAGER),
+    (u) => u.active && (u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN),
   );
 
   const mutation = useMutation({

@@ -71,10 +71,11 @@ export default function CalendarioPage() {
 
   const activeSchedules = (schedules ?? []).filter((s) => s.status !== ScheduleStatus.CANCELLED);
 
-  // Gestor também pode ir a campo como responsável — mesma lista de pessoas
-  // elegíveis usada no seletor de técnico (ver ScheduleForm/ConfirmDropModal).
+  // Gestor e Admin também podem ir a campo como responsável — mesma lista
+  // de pessoas elegíveis usada no seletor de técnico (ver
+  // ScheduleForm/ConfirmDropModal).
   const technicalStaff = (users ?? [])
-    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER)
+    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN)
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const technicianColors = buildTechnicianColorMap(technicalStaff);
 

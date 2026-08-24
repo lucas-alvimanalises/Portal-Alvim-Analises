@@ -27,9 +27,10 @@ export function ConfirmDropModal({ schedule, targetDayKey, onClose }: ConfirmDro
   );
 
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
-  // Gestor também pode ser designado responsável de campo, além de Técnico.
+  // Gestor e Admin também podem ser designados responsáveis de campo, além
+  // de Técnico.
   const technicianOptions = (users ?? [])
-    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER)
+    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN)
     .map((u) => ({ value: u.id, label: u.name }));
 
   const mutation = useMutation({
