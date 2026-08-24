@@ -1,5 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, ChevronRight } from 'lucide-react-native';
@@ -47,11 +48,13 @@ export default function HomeScreen() {
   const schedules = schedulesQuery.data;
   const nextSchedule = schedules ? getNextSchedule(schedules) : undefined;
   const pendingCertificatesCount = pendingCertificatesQuery.data?.length;
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.screen}>
       <Header
         name={user?.name ?? ''}
+        insetTop={insets.top}
         onPressBell={() =>
           Alert.alert('Notificações', 'Central de notificações em breve.')
         }
@@ -112,15 +115,17 @@ export default function HomeScreen() {
 
 function Header({
   name,
+  insetTop,
   onPressBell,
   onPressAvatar,
 }: {
   name: string;
+  insetTop: number;
   onPressBell: () => void;
   onPressAvatar: () => void;
 }) {
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: insetTop + 6 }]}>
       <View style={styles.headerText}>
         <Text style={styles.greeting}>
           {getGreeting()}
@@ -235,7 +240,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: {
     backgroundColor: colors.surface,
-    paddingTop: 6,
     paddingBottom: spacing[4],
     paddingHorizontal: spacing[5],
     borderBottomWidth: 1,

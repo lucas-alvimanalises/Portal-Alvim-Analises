@@ -1,4 +1,5 @@
 import { Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 import { Home, CalendarDays, ListChecks, User } from 'lucide-react-native';
 import { colors, typography } from '../../../lib/theme';
@@ -28,6 +29,8 @@ function TabLabel(label: string) {
 }
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tabs
       screenOptions={{
@@ -36,8 +39,9 @@ export default function TabsLayout() {
           backgroundColor: colors.surface,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          height: 62,
+          height: 62 + insets.bottom,
           paddingTop: 9,
+          paddingBottom: insets.bottom,
         },
         tabBarItemStyle: { gap: 5 },
       }}
