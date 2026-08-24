@@ -4,6 +4,7 @@ import * as Updates from 'expo-updates';
 import { ROLE_LABELS_PT } from '@portal-alvim/shared';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { useTheme } from '../../../lib/theme/ThemeContext';
+import { useBiometric } from '../../../lib/biometric/BiometricContext';
 
 // updateId/createdAt vêm do próprio expo-updates (só existem de verdade num
 // build standalone, não no Expo Go) — mostrar aqui é a única forma de
@@ -25,7 +26,25 @@ function formatUpdateInfo(): string {
 export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const { scheme, colors, toggleTheme } = useTheme();
+  const { enabled: biometricEnabled, isSupported: biometricSupported, setEnabled: setBiometricEnabled } =
+    useBiometric();
   const [checking, setChecking] = useState(false);
+  const [togglingBiometric, setTogglingBiometric] = useState(false);
+
+  async function handleToggleBiometric(value: boolean) {
+    setTogglingBiometric(true);
+    try {
+      const success = await setBiometricEnabled(value);
+      if (!success && value) {
+        Alert.alert(
+          'Não foi possível ativar',
+          'Confirme sua digital quando o celular pedir, ou cadastre uma digital/rosto nas configurações do aparelho.',
+        );
+      }
+    } finally {
+      setTogglingBiometric(false);
+    }
+  }
 
   async function checkForUpdate() {
     setChecking(true);
@@ -69,6 +88,24 @@ export default function PerfilScreen() {
             thumbColor="#fff"
           />
         </View>
+      </View>
+
+      <View style={[styles.box, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.themeRow}>
+          <Text style={[styles.boxLabel, { color: colors.textMuted }]}>Entrar com biometria</Text>
+          <Switch
+            value={biometricEnabled}
+            onValueChange={handleToggleBiometric}
+            disabled={togglingBiometric || (!biometricEnabled && !biometricSupported)}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+        {!biometricSupported && !biometricEnabled && (
+          <Text style={[styles.updateValue, { color: colors.textMuted, marginTop: 4, marginBottom: 0 }]}>
+            Cadastre uma digital ou reconhecimento facial nas configurações do aparelho pra usar isso.
+          </Text>
+        )}
       </View>
 
       <View style={[styles.box, { backgroundColor: colors.surface, borderColor: colors.border }]}>

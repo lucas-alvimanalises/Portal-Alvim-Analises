@@ -4,11 +4,14 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../lib/auth/AuthContext';
 import { ThemeProvider, useTheme } from '../lib/theme/ThemeContext';
+import { BiometricProvider, useBiometric } from '../lib/biometric/BiometricContext';
+import { BiometricLockScreen } from '../components/BiometricLockScreen';
 
 const queryClient = new QueryClient();
 
 function RootNavigation() {
   const { user, isLoading } = useAuth();
+  const { settingsLoaded, locked } = useBiometric();
   const segments = useSegments();
   const router = useRouter();
 
@@ -23,6 +26,13 @@ function RootNavigation() {
       router.replace('/');
     }
   }, [user, isLoading, segments]);
+
+  // Trancado por biometria (ver BiometricContext): cobre a tela toda em vez
+  // do Stack normal, até confirmar a digital. Só depois de settingsLoaded
+  // pra nunca piscar a Home antes de saber se devia estar trancado.
+  if (user && settingsLoaded && locked) {
+    return <BiometricLockScreen />;
+  }
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
@@ -41,8 +51,10 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <RootNavigation />
-          <ThemedStatusBar />
+          <BiometricProvider>
+            <RootNavigation />
+            <ThemedStatusBar />
+          </BiometricProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -44,6 +44,12 @@
         {
           "locationAlwaysAndWhenInUsePermission": "O app usa sua localização para registrar onde a foto do serviço foi tirada."
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "O app usa reconhecimento facial para permitir entrar com biometria."
+        }
       ]
     ],
     "extra": {
