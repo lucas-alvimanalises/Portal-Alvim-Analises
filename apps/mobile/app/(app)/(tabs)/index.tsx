@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell, ChevronRight } from 'lucide-react-native';
+import { Bell, ChevronRight, Navigation } from 'lucide-react-native';
 import { Role, ScheduleDto } from '@portal-alvim/shared';
 import { useAuth } from '../../../lib/auth/AuthContext';
 import { schedulesApi } from '../../../lib/api/schedules.api';
@@ -21,6 +21,7 @@ import { radii, shadow, spacing } from '../../../lib/theme';
 import { ColorPalette } from '../../../lib/theme/palettes';
 import { useThemeColors } from '../../../lib/theme/ThemeContext';
 import { getFirstName, getGreeting, getInitials } from '../../../lib/format';
+import { canOpenNavigation, openNavigationChoice } from '../../../lib/navigation-links';
 import {
   formatScheduleDatePill,
   formatScheduleSubtitle,
@@ -310,6 +311,14 @@ function ScheduleSummaryCard({
         >
           <Text style={styles.secondaryActionText}>Organizar</Text>
         </Pressable>
+        {canOpenNavigation(schedule) && (
+          <Pressable
+            style={({ pressed }) => [styles.mapAction, pressed && styles.secondaryActionPressed]}
+            onPress={() => openNavigationChoice(schedule)}
+          >
+            <Navigation size={17} strokeWidth={2} color={colors.text} />
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -498,6 +507,15 @@ function createStyles(colors: ColorPalette) {
   },
   secondaryActionPressed: { backgroundColor: colors.surfaceMuted },
   secondaryActionText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  mapAction: {
+    width: 44,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   retryButton: {
     alignSelf: 'flex-start',
     borderWidth: 1,

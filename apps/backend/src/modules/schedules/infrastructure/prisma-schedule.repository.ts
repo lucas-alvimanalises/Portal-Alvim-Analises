@@ -10,7 +10,9 @@ import {
 } from '../domain/schedule.repository';
 
 const INCLUDE_RELATIONS = {
-  client: { select: { companyName: true } },
+  // address/mapsUrl: usados pra montar o botão "Como chegar" no app mobile
+  // (ScheduleDto.clientAddress/clientMapsUrl, ver schedule.mapper.ts).
+  client: { select: { companyName: true, address: true, mapsUrl: true } },
   serviceType: { select: { name: true } },
   // email/active/emailNotifications só usados internamente pro e-mail ao
   // técnico responsável (ver ScheduleWithRelations/SendScheduleToClientUseCase)

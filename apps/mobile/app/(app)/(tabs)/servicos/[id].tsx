@@ -28,6 +28,8 @@ import { custodyExtractionsApi } from '../../../../lib/api/custody-extractions.a
 import { API_URL, getApiErrorMessage } from '../../../../lib/api/client';
 import { tokenStorage } from '../../../../lib/auth/storage';
 import { getCurrentStampLocation, formatStampText } from '../../../../lib/location-stamp';
+import { canOpenNavigation, openNavigationChoice } from '../../../../lib/navigation-links';
+import { Navigation } from 'lucide-react-native';
 import { PhotoStampCapture } from '../../../../components/PhotoStampCapture';
 import { ColorPalette } from '../../../../lib/theme/palettes';
 import { useThemeColors } from '../../../../lib/theme/ThemeContext';
@@ -432,6 +434,12 @@ export default function ServicoDetalheScreen() {
                 </Text>
               </View>
             )}
+            {canOpenNavigation(schedule) && (
+              <Pressable style={styles.navigateButton} onPress={() => openNavigationChoice(schedule)}>
+                <Navigation size={15} strokeWidth={2} color={colors.primary} />
+                <Text style={styles.navigateButtonText}>Como chegar</Text>
+              </Pressable>
+            )}
           </View>
         )}
 
@@ -573,6 +581,19 @@ function createStyles(colors: ColorPalette) {
     meta: { color: colors.textMuted, fontSize: 13 },
     badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
     badgeText: { fontSize: 12, fontWeight: '600' },
+    navigateButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      alignSelf: 'flex-start',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      marginTop: 10,
+    },
+    navigateButtonText: { fontSize: 13, fontWeight: '600', color: colors.primary },
     section: {
       backgroundColor: colors.surface,
       borderRadius: 8,

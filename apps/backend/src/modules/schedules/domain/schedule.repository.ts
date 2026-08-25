@@ -31,7 +31,7 @@ export interface UpdateScheduleCommentsData {
 }
 
 export type ScheduleWithRelations = Schedule & {
-  client?: { companyName: string } | null;
+  client?: { companyName: string; address: string | null; mapsUrl: string | null } | null;
   serviceType?: { name: string } | null;
   // email/active/emailNotifications só existem aqui pro envio de e-mail ao
   // técnico responsável (ver SendScheduleToClientUseCase) — nunca vazam pro

@@ -31,6 +31,10 @@ export interface ScheduleDto {
   contractId: string | null;
   clientId: string;
   clientName?: string;
+  // Usados pra montar o botão "Como chegar" (Google Maps/Waze) no app mobile
+  // — vêm do cadastro da empresa (Client.address/mapsUrl).
+  clientAddress?: string | null;
+  clientMapsUrl?: string | null;
   serviceTypeId: string;
   serviceTypeName?: string;
   // Serviços podem durar mais de um dia: início e fim (sem horário).

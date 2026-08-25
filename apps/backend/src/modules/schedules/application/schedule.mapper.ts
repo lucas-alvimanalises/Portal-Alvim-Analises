@@ -16,6 +16,8 @@ export function toScheduleDto(
     contractId: schedule.contractId,
     clientId: schedule.clientId,
     clientName: schedule.client?.companyName,
+    clientAddress: schedule.client?.address ?? null,
+    clientMapsUrl: schedule.client?.mapsUrl ?? null,
     serviceTypeId: schedule.serviceTypeId,
     serviceTypeName: schedule.serviceType?.name,
     scheduledDate: schedule.scheduledDate.toISOString(),
