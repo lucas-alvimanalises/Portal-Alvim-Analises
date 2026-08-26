@@ -22,7 +22,9 @@ export function ToBeScheduledPanel({ schedules, technicianColors }: ToBeSchedule
             key={schedule.id}
             schedule={schedule}
             origin="panel"
-            color={technicianColors.get(schedule.technicians[0]?.id ?? '')}
+            colors={schedule.technicians
+              .map((t) => technicianColors.get(t.id))
+              .filter((c): c is TechnicianColor => !!c)}
           />
         ))}
         {schedules.length === 0 && (

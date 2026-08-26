@@ -15,8 +15,27 @@ interface ScheduleCardProps {
   // schedule.id em várias células — precisa entrar no id de arraste do
   // dnd-kit pra cada cópia ser um draggable distinto.
   dayKey?: string;
-  color?: TechnicianColor;
+  // Uma cor por técnico responsável, na mesma ordem de schedule.technicians
+  // (ver CalendarGrid/ToBeScheduledPanel) — serviço com só 1 técnico continua
+  // um fundo sólido; com 2+ o fundo vira listras, uma por técnico (pedido do
+  // usuário: enxergar de relance todo mundo alocado, não só o primeiro).
+  colors?: TechnicianColor[];
 }
+
+// Fundo com várias cores vira listras verticais de largura igual, com corte
+// duro (sem degradê) entre elas — cada cor ocupa exatamente 1/N do card.
+function buildStripedBackground(backgrounds: string[]): string {
+  const step = 100 / backgrounds.length;
+  const stops = backgrounds.flatMap((bg, i) => [`${bg} ${i * step}%`, `${bg} ${(i + 1) * step}%`]);
+  return `linear-gradient(to right, ${stops.join(', ')})`;
+}
+
+// Com 2+ técnicos as listras têm cores diferentes entre si — não dá pra usar
+// a cor de texto pareada de UMA cor só (ficaria ilegível nas outras listras).
+// Um neutro escuro fixo lê bem em cima de qualquer cor da paleta (todas
+// pastéis claros, ver technician-colors.ts), em claro ou escuro, já que o
+// fundo aqui nunca acompanha o tema mesmo.
+const MULTI_COLOR_TEXT = '#1c1f24';
 
 // Card compacto (empresa — serviço — técnico) usado tanto no painel "a
 // agendar" quanto nas células do calendário — é o mesmo elemento arrastável
@@ -24,7 +43,7 @@ interface ScheduleCardProps {
 // arrastar) abre um menu com duas ações — o PointerSensor do DndContext pai
 // tem uma distância mínima de ativação, então um clique sem movimento nunca
 // é interpretado como início de arraste.
-export function ScheduleCard({ schedule, origin, dayKey, color }: ScheduleCardProps) {
+export function ScheduleCard({ schedule, origin, dayKey, colors }: ScheduleCardProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -52,6 +71,14 @@ export function ScheduleCard({ schedule, origin, dayKey, color }: ScheduleCardPr
     ? 'Sem técnico definido'
     : schedule.technicians.map((t) => t.name).join(', ');
 
+  const validColors = colors ?? [];
+  const primaryColor = validColors[0];
+  const cardBackground =
+    validColors.length > 1
+      ? buildStripedBackground(validColors.map((c) => c.background))
+      : primaryColor?.background;
+  const cardTextColor = validColors.length > 1 ? MULTI_COLOR_TEXT : primaryColor?.text;
+
   return (
     <div
       ref={(node) => {
@@ -71,19 +98,20 @@ export function ScheduleCard({ schedule, origin, dayKey, color }: ScheduleCardPr
         transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging || menuOpen ? 10 : undefined,
-        background: color?.background,
-        borderColor: color?.border,
-        borderLeft: color ? `3px solid ${color.border}` : undefined,
-        // Fundo do card é um pastel fixo (não segue o tema, ver
+        background: cardBackground,
+        borderColor: primaryColor?.border,
+        borderLeft: primaryColor ? `3px solid ${primaryColor.border}` : undefined,
+        // Fundo do card é pastel fixo (não segue o tema, ver
         // technician-colors.ts) — a cor do texto precisa ser a `text`
-        // pareada com ele, nunca a `var(--color-text)` do tema: no modo
-        // escuro ela vira quase-branco e ficava ilegível em cima desses
-        // fundos claros (bug real, achado pelo usuário).
-        color: color?.text,
+        // pareada com ele (ou o neutro fixo quando são várias listras),
+        // nunca a `var(--color-text)` do tema: no modo escuro ela vira
+        // quase-branco e ficava ilegível em cima desses fundos claros (bug
+        // real, achado pelo usuário).
+        color: cardTextColor,
       }}
     >
       <div style={{ fontWeight: 600 }}>{schedule.clientName}</div>
-      <div style={{ opacity: color ? 0.8 : 1, color: color ? undefined : 'var(--color-text-muted)' }}>
+      <div style={{ opacity: cardTextColor ? 0.8 : 1, color: cardTextColor ? undefined : 'var(--color-text-muted)' }}>
         {schedule.serviceTypeName}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
@@ -100,8 +128,8 @@ export function ScheduleCard({ schedule, origin, dayKey, color }: ScheduleCardPr
         )}
         <span
           style={{
-            opacity: hasNoTechnician ? (color ? 0.8 : 1) : 1,
-            color: hasNoTechnician && !color ? 'var(--color-text-muted)' : 'inherit',
+            opacity: hasNoTechnician ? (cardTextColor ? 0.8 : 1) : 1,
+            color: hasNoTechnician && !cardTextColor ? 'var(--color-text-muted)' : 'inherit',
           }}
         >
           {technicianLabel}
