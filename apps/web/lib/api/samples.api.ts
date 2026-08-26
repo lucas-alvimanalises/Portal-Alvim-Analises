@@ -33,4 +33,22 @@ export const samplesApi = {
   replaceResultRows: (id: string, payload: ReplaceSampleResultRowsPayload) =>
     apiClient.put<SampleDto>(`samples/${id}/results`, payload),
   listPendingCertificates: () => apiClient.get<PendingCertificateDto[]>('samples/pending-certificates'),
+  // Devolve a URL pronta pra navegar/abrir (Content-Disposition: attachment
+  // já força o download) — mesmo padrão de plantMaintenancesApi.attachmentFileUrl,
+  // sem passar pelo apiClient (que sempre espera JSON de volta).
+  exportExcelUrl: (params: {
+    clientId: string;
+    samplingPointIds?: string[];
+    compoundIds?: string[];
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const query = new URLSearchParams();
+    query.set('clientId', params.clientId);
+    if (params.samplingPointIds?.length) query.set('samplingPointIds', params.samplingPointIds.join(','));
+    if (params.compoundIds?.length) query.set('compoundIds', params.compoundIds.join(','));
+    if (params.startDate) query.set('startDate', params.startDate);
+    if (params.endDate) query.set('endDate', params.endDate);
+    return `/api/backend/samples/export?${query.toString()}`;
+  },
 };

@@ -11,6 +11,7 @@ import { useCurrentUser } from '../../../../../lib/auth/useCurrentUser';
 import { useActiveClient } from '../../../../../lib/auth/ActiveClientContext';
 import { HistoricoPontoContent } from '../../../../../components/historico/HistoricoPontoContent';
 import { PeriodFilter } from '../../../../../components/historico/PeriodFilter';
+import { ExportExcelModal } from '../../../../../components/historico/ExportExcelModal';
 
 export default function HistoricoPontoPage() {
   const params = useParams<{ clientId: string; pointId: string }>();
@@ -40,6 +41,7 @@ export default function HistoricoPontoPage() {
     queryFn: () => samplingPointsApi.listByClient(params.clientId),
   });
   const point = samplingPoints?.find((p) => p.id === params.pointId);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   return (
     <div>
@@ -57,7 +59,18 @@ export default function HistoricoPontoPage() {
           </Link>{' '}
           / {point?.name ?? '...'}
         </h1>
+        <button type="button" className="btn btn-secondary" onClick={() => setExportModalOpen(true)}>
+          Baixar Excel
+        </button>
       </div>
+
+      {exportModalOpen && (
+        <ExportExcelModal
+          clientId={params.clientId}
+          initialSamplingPointId={params.pointId}
+          onClose={() => setExportModalOpen(false)}
+        />
+      )}
 
       <PeriodFilter
         startDate={startDate}

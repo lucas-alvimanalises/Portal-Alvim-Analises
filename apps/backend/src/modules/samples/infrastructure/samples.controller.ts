@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthenticatedUser, Role } from '@portal-alvim/shared';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../../common/guards/roles.guard';
@@ -13,6 +14,7 @@ import { UpdateSampleUseCase } from '../application/use-cases/update-sample.use-
 import { DeactivateSampleUseCase } from '../application/use-cases/deactivate-sample.use-case';
 import { ReplaceSampleResultRowsUseCase } from '../application/use-cases/replace-sample-result-rows.use-case';
 import { ListPendingCertificatesUseCase } from '../application/use-cases/list-pending-certificates.use-case';
+import { ExportSamplesExcelUseCase } from '../application/use-cases/export-samples-excel.use-case';
 import { toSampleDto } from '../application/sample.mapper';
 
 @Controller('samples')
@@ -26,14 +28,45 @@ export class SamplesController {
     private readonly deactivateSampleUseCase: DeactivateSampleUseCase,
     private readonly replaceSampleResultRowsUseCase: ReplaceSampleResultRowsUseCase,
     private readonly listPendingCertificatesUseCase: ListPendingCertificatesUseCase,
+    private readonly exportSamplesExcelUseCase: ExportSamplesExcelUseCase,
   ) {}
 
-  // Antes de ':id' de propósito (senão "pending-certificates" seria lido
-  // como um id de amostra).
+  // Antes de ':id' de propósito (senão "pending-certificates"/"export"
+  // seriam lidos como um id de amostra).
   @Get('pending-certificates')
   @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   listPendingCertificates() {
     return this.listPendingCertificatesUseCase.execute();
+  }
+
+  // Exportação em Excel do Histórico — sob demanda, liberado pra todo mundo
+  // que já acessa GET /samples hoje (inclusive CLIENT, só da própria
+  // empresa, ver assertOwnership dentro do use-case). samplingPointIds/
+  // compoundIds vêm como lista separada por vírgula (evita configurar
+  // parsing de array de query string no Nest pra um caso só).
+  @Get('export')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN, Role.CLIENT)
+  async exportExcel(
+    @CurrentUser() user: AuthenticatedUser,
+    @Res() res: Response,
+    @Query('clientId') clientId: string,
+    @Query('samplingPointIds') samplingPointIds?: string,
+    @Query('compoundIds') compoundIds?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const { buffer, filename } = await this.exportSamplesExcelUseCase.execute(user, {
+      clientId,
+      samplingPointIds: samplingPointIds?.split(',').filter(Boolean),
+      compoundIds: compoundIds?.split(',').filter(Boolean),
+      startDate,
+      endDate,
+    });
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+    });
+    res.send(buffer);
   }
 
   @Get()

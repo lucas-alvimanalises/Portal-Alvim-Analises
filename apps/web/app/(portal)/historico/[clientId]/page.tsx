@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -10,6 +10,7 @@ import { samplingPointsApi } from '../../../../lib/api/sampling-points.api';
 import { useCurrentUser } from '../../../../lib/auth/useCurrentUser';
 import { useActiveClient } from '../../../../lib/auth/ActiveClientContext';
 import { TableSkeleton } from '../../../../components/shared/Skeleton';
+import { ExportExcelModal } from '../../../../components/historico/ExportExcelModal';
 
 // Nível 2 do Histórico: pontos de amostragem cadastrados pra esta empresa —
 // cada um leva pro nível 3 (compostos + histórico de amostras).
@@ -41,6 +42,7 @@ export default function HistoricoEmpresaPage() {
   });
 
   const activePoints = (samplingPoints ?? []).filter((p) => p.active);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   return (
     <div>
@@ -51,10 +53,19 @@ export default function HistoricoEmpresaPage() {
           </Link>{' '}
           / {client?.companyName ?? '...'}
         </h1>
-        <Link href={`/historico/${params.clientId}/comparar`} className="btn btn-secondary">
-          Comparar pontos
-        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="btn btn-secondary" onClick={() => setExportModalOpen(true)}>
+            Baixar Excel
+          </button>
+          <Link href={`/historico/${params.clientId}/comparar`} className="btn btn-secondary">
+            Comparar pontos
+          </Link>
+        </div>
       </div>
+
+      {exportModalOpen && (
+        <ExportExcelModal clientId={params.clientId} onClose={() => setExportModalOpen(false)} />
+      )}
 
       {isLoading ? (
         <TableSkeleton />

@@ -10,6 +10,7 @@ import { UpdateSampleUseCase } from './application/use-cases/update-sample.use-c
 import { DeactivateSampleUseCase } from './application/use-cases/deactivate-sample.use-case';
 import { ReplaceSampleResultRowsUseCase } from './application/use-cases/replace-sample-result-rows.use-case';
 import { ListPendingCertificatesUseCase } from './application/use-cases/list-pending-certificates.use-case';
+import { ExportSamplesExcelUseCase } from './application/use-cases/export-samples-excel.use-case';
 import { SampleCompletionService } from './application/sample-completion.service';
 
 @Module({
@@ -24,6 +25,7 @@ import { SampleCompletionService } from './application/sample-completion.service
     DeactivateSampleUseCase,
     ReplaceSampleResultRowsUseCase,
     ListPendingCertificatesUseCase,
+    ExportSamplesExcelUseCase,
     SampleCompletionService,
   ],
   exports: [SAMPLE_REPOSITORY, SampleCompletionService],
