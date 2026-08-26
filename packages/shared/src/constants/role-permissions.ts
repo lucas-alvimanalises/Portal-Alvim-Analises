@@ -41,10 +41,6 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: 'Usuários', href: '/usuarios', roles: [Role.ADMIN] },
   { label: 'Empresas', href: '/empresas', roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN] },
-  // Mural colaborativo de dicas locais (onde comer, onde comprar insumo que
-  // só acha na cidade do cliente, etc.) — uso 100% interno da Alvim, nunca
-  // visível pro CLIENT (ver LocalTipsController, sem @Roles(CLIENT)).
-  { label: 'Dicas Locais', href: '/dicas-locais', roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN] },
   // Cliente ainda não vê Contratos: tela em construção (confirmado com o
   // usuário) — volta a ficar visível pra CLIENT quando a funcionalidade for
   // concluída. Técnico também não vê Contratos (exceção explícita do

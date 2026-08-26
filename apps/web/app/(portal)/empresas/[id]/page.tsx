@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateClientPayload } from '@portal-alvim/shared';
 import { ClientForm } from '../../../../components/forms/ClientForm';
 import { SamplingPointsManager } from '../../../../components/forms/SamplingPointsManager';
+import { LocalTipsManager } from '../../../../components/forms/LocalTipsManager';
 import { clientsApi } from '../../../../lib/api/clients.api';
 import { TableSkeleton } from '../../../../components/shared/Skeleton';
 
@@ -41,6 +42,7 @@ export default function EditarEmpresaPage() {
             onSubmit={(formData) => mutation.mutateAsync(formData)}
           />
           <SamplingPointsManager clientId={params.id} />
+          <LocalTipsManager clientId={params.id} />
         </>
       )}
     </div>
