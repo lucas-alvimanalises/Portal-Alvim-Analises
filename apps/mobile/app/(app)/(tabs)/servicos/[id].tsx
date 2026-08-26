@@ -29,7 +29,7 @@ import { API_URL, getApiErrorMessage } from '../../../../lib/api/client';
 import { tokenStorage } from '../../../../lib/auth/storage';
 import { getCurrentStampLocation, formatStampText } from '../../../../lib/location-stamp';
 import { canOpenNavigation, openNavigationChoice } from '../../../../lib/navigation-links';
-import { Navigation } from 'lucide-react-native';
+import { MapPin, Navigation } from 'lucide-react-native';
 import { PhotoStampCapture } from '../../../../components/PhotoStampCapture';
 import { ColorPalette } from '../../../../lib/theme/palettes';
 import { useThemeColors } from '../../../../lib/theme/ThemeContext';
@@ -245,6 +245,7 @@ function AmostraSlot({
 
 export default function ServicoDetalheScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const colors = useThemeColors();
   const styles = createStyles(colors);
@@ -434,12 +435,27 @@ export default function ServicoDetalheScreen() {
                 </Text>
               </View>
             )}
-            {canOpenNavigation(schedule) && (
-              <Pressable style={styles.navigateButton} onPress={() => openNavigationChoice(schedule)}>
-                <Navigation size={15} strokeWidth={2} color={colors.primary} />
-                <Text style={styles.navigateButtonText}>Como chegar</Text>
+            <View style={styles.headerActionsRow}>
+              {canOpenNavigation(schedule) && (
+                <Pressable style={styles.navigateButton} onPress={() => openNavigationChoice(schedule)}>
+                  <Navigation size={15} strokeWidth={2} color={colors.primary} />
+                  <Text style={styles.navigateButtonText}>Como chegar</Text>
+                </Pressable>
+              )}
+              <Pressable
+                style={styles.navigateButton}
+                onPress={() =>
+                  router.push(
+                    `/dicas-locais/${schedule.clientId}?clientName=${encodeURIComponent(
+                      schedule.clientName ?? '',
+                    )}` as never,
+                  )
+                }
+              >
+                <MapPin size={15} strokeWidth={2} color={colors.primary} />
+                <Text style={styles.navigateButtonText}>Dicas do local</Text>
               </Pressable>
-            )}
+            </View>
           </View>
         )}
 
@@ -581,6 +597,7 @@ function createStyles(colors: ColorPalette) {
     meta: { color: colors.textMuted, fontSize: 13 },
     badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, marginTop: 6 },
     badgeText: { fontSize: 12, fontWeight: '600' },
+    headerActionsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
     navigateButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -591,7 +608,6 @@ function createStyles(colors: ColorPalette) {
       borderRadius: 8,
       paddingHorizontal: 12,
       paddingVertical: 7,
-      marginTop: 10,
     },
     navigateButtonText: { fontSize: 13, fontWeight: '600', color: colors.primary },
     section: {

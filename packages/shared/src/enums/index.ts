@@ -9,3 +9,4 @@ export * from './analysis-status.enum';
 export * from './compliance-status.enum';
 export * from './anp-report-parameter.enum';
 export * from './tracking-shipment-status.enum';
+export * from './local-tip-category.enum';

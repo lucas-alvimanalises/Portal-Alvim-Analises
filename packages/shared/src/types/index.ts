@@ -19,6 +19,7 @@ export * from './printed-label.types';
 export * from './field-checklist.types';
 export * from './plant-maintenance.types';
 export * from './anp-monthly-report.types';
+export * from './local-tip.types';
 export * from './field-report.types';
 export * from './service-results-summary.types';
 export * from './tracking-shipment.types';

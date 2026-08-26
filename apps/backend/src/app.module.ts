@@ -31,6 +31,7 @@ import { FieldReportsModule } from './modules/field-reports/field-reports.module
 import { AnpMonthlyReportsModule } from './modules/anp-monthly-reports/anp-monthly-reports.module';
 import { ServiceResultsSummaryModule } from './modules/service-results-summary/service-results-summary.module';
 import { TrackingShipmentsModule } from './modules/tracking-shipments/tracking-shipments.module';
+import { LocalTipsModule } from './modules/local-tips/local-tips.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { TrackingShipmentsModule } from './modules/tracking-shipments/tracking-s
     AnpMonthlyReportsModule,
     ServiceResultsSummaryModule,
     TrackingShipmentsModule,
+    LocalTipsModule,
   ],
   providers: [
     // Guard global: exige JWT válido em toda rota, exceto as marcadas @Public().

@@ -86,6 +86,7 @@ model User {
   serviceChecklistsFilled ServiceChecklist[]
   plantMaintenancesCreated PlantMaintenance[]
   anpMonthlyReportsGenerated AnpMonthlyReport[]
+  localTipsCreated ClientLocalTip[]
   anpRegulatoryLimitsUpdated AnpRegulatoryLimit[]
   fieldReportsGenerated      FieldReport[]
   serviceResultsSummariesGenerated ServiceResultsSummary[]
@@ -162,6 +163,7 @@ model Client {
   samplingPoints SamplingPoint[]
   plantMaintenances PlantMaintenance[]
   anpMonthlyReports AnpMonthlyReport[]
+  localTips         ClientLocalTip[]
 
   @@map("clients")
 }
@@ -215,6 +217,42 @@ model PlantMaintenance {
   @@index([clientId])
   @@index([date])
   @@map("plant_maintenances")
+}
+
+enum LocalTipCategory {
+  FOOD
+  SUPPLIES
+  LODGING
+  OTHER
+}
+
+// Dicas de lugares úteis por região, cadastradas livremente por qualquer
+// colaborador Alvim que já passou pela cidade do cliente (onde comer, onde
+// comprar gelo/insumo que só acha ali, farmácia 24h, etc.) — cada cliente
+// fica numa cidade diferente, então quem chega pela primeira vez não tem
+// essa referência. Uso 100% interno da Alvim: nunca aparece pro papel
+// CLIENT, nem rota nem campo (ver LocalTipsController, sem @Roles(CLIENT)).
+model ClientLocalTip {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  name     String
+  category LocalTipCategory
+  address  String?
+  // Link do Google Maps do lugar — mesmo campo/uso do Client.mapsUrl, ver
+  // navigation-links.ts no app mobile (botão "Como chegar").
+  mapsUrl  String?
+  notes    String? @db.Text
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clientId])
+  @@map("client_local_tips")
 }
 
 // Lookup extensível (mesmo padrão do ServiceType): tipos de ponto de
