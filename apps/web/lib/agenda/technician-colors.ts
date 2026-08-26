@@ -1,25 +1,33 @@
 // Cor de fundo do card no calendário por técnico responsável — ajuda a
 // visualizar rapidamente quem está alocado em cada dia sem precisar ler o
-// nome. Só cores claras (texto escuro continua legível em cima).
+// nome. Fundos sempre claros (mesmo tom em claro/escuro, não seguem o
+// tema) — por isso `text` vem pareado e fixo aqui, nunca `var(--color-text)`:
+// no modo escuro essa variável vira quase-branco e ficava ilegível em cima
+// desses pastéis claros (bug real, achado pelo usuário — ver ScheduleCard).
 export interface TechnicianColor {
   background: string;
   border: string;
+  text: string;
 }
 
 const PALETTE: TechnicianColor[] = [
-  { background: '#dbeafe', border: '#93c5fd' }, // azul claro
-  { background: '#dcfce7', border: '#86efac' }, // verde claro
-  { background: '#fef9c3', border: '#fde047' }, // amarelo claro
-  { background: '#fce7f3', border: '#f9a8d4' }, // rosa claro
-  { background: '#ede9fe', border: '#c4b5fd' }, // roxo claro
-  { background: '#ffedd5', border: '#fdba74' }, // laranja claro
-  { background: '#cffafe', border: '#67e8f9' }, // ciano claro
-  { background: '#e5e7eb', border: '#d1d5db' }, // cinza claro
+  { background: '#dbeafe', border: '#93c5fd', text: '#1e40af' }, // azul claro
+  { background: '#dcfce7', border: '#86efac', text: '#166534' }, // verde claro
+  { background: '#fef9c3', border: '#fde047', text: '#854d0e' }, // amarelo claro
+  { background: '#fce7f3', border: '#f9a8d4', text: '#9d174d' }, // rosa claro
+  { background: '#ede9fe', border: '#c4b5fd', text: '#5b21b6' }, // roxo claro
+  { background: '#ffedd5', border: '#fdba74', text: '#9a3412' }, // laranja claro
+  { background: '#cffafe', border: '#67e8f9', text: '#155e75' }, // ciano claro
+  { background: '#e5e7eb', border: '#d1d5db', text: '#374151' }, // cinza claro
 ];
 
+// Sem técnico atribuído: cai no fundo neutro do card (`--color-surface`),
+// esse sim acompanha o tema — por isso o texto aqui pode continuar
+// `var(--color-text)` normalmente, sem risco de ilegibilidade.
 export const DEFAULT_TECHNICIAN_COLOR: TechnicianColor = {
   background: 'var(--color-surface)',
   border: 'var(--color-border)',
+  text: 'var(--color-text)',
 };
 
 // Nomes citados explicitamente pelo usuário (Victor = azul, Marcio = verde,

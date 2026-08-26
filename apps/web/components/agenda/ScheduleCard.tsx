@@ -74,10 +74,18 @@ export function ScheduleCard({ schedule, origin, dayKey, color }: ScheduleCardPr
         background: color?.background,
         borderColor: color?.border,
         borderLeft: color ? `3px solid ${color.border}` : undefined,
+        // Fundo do card é um pastel fixo (não segue o tema, ver
+        // technician-colors.ts) — a cor do texto precisa ser a `text`
+        // pareada com ele, nunca a `var(--color-text)` do tema: no modo
+        // escuro ela vira quase-branco e ficava ilegível em cima desses
+        // fundos claros (bug real, achado pelo usuário).
+        color: color?.text,
       }}
     >
       <div style={{ fontWeight: 600 }}>{schedule.clientName}</div>
-      <div style={{ color: 'var(--color-text-muted)' }}>{schedule.serviceTypeName}</div>
+      <div style={{ opacity: color ? 0.8 : 1, color: color ? undefined : 'var(--color-text-muted)' }}>
+        {schedule.serviceTypeName}
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
         {/* Só faz sentido alertar "sem técnico" pra um serviço que já tem
             data — o fluxo de drop sempre força escolher técnico, isso só
@@ -90,7 +98,12 @@ export function ScheduleCard({ schedule, origin, dayKey, color }: ScheduleCardPr
             sem técnico
           </span>
         )}
-        <span style={{ color: hasNoTechnician ? 'var(--color-text-muted)' : 'inherit' }}>
+        <span
+          style={{
+            opacity: hasNoTechnician ? (color ? 0.8 : 1) : 1,
+            color: hasNoTechnician && !color ? 'var(--color-text-muted)' : 'inherit',
+          }}
+        >
           {technicianLabel}
         </span>
       </div>
