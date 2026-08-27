@@ -1,6 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic, { APIError } from '@anthropic-ai/sdk';
 import { CLIENT_DERIVED_CUSTODY_FIELD_KEYS, CustodyExtractedData, CustodyTemplateSchema } from '@portal-alvim/shared';
 import { AppConfig } from '../../../config/configuration';
 
@@ -77,7 +77,12 @@ export class ClaudeOcrService {
 
   constructor(configService: ConfigService) {
     const appConfig = configService.get<AppConfig>('app')!;
-    this.client = appConfig.anthropicApiKey ? new Anthropic({ apiKey: appConfig.anthropicApiKey }) : null;
+    // maxRetries acima do padrão do SDK (2) — mesmo raciocínio de
+    // ClaudeCertificateOcrService: picos de sobrecarga do Claude (529)
+    // costumam durar só alguns segundos.
+    this.client = appConfig.anthropicApiKey
+      ? new Anthropic({ apiKey: appConfig.anthropicApiKey, maxRetries: 5 })
+      : null;
   }
 
   async extractCustodyForm(file: ScanFile, schema: CustodyTemplateSchema): Promise<CustodyExtractedData> {
@@ -87,16 +92,29 @@ export class ClaudeOcrService {
       );
     }
 
-    const response = await this.client.messages.create({
-      model: MODEL,
-      max_tokens: 4096,
-      messages: [
-        {
-          role: 'user',
-          content: [toBase64Source(file), { type: 'text', text: buildPrompt(schema) }],
-        },
-      ],
-    });
+    let response;
+    try {
+      response = await this.client.messages.create({
+        model: MODEL,
+        max_tokens: 4096,
+        messages: [
+          {
+            role: 'user',
+            content: [toBase64Source(file), { type: 'text', text: buildPrompt(schema) }],
+          },
+        ],
+      });
+    } catch (error) {
+      // Mesmo raciocínio de ClaudeCertificateOcrService: mensagem clara em
+      // vez do JSON cru do erro quando a API da Anthropic está sobrecarregada.
+      if (error instanceof APIError && (error.status === 529 || error.status === 429 || error.status === 503)) {
+        this.logger.warn(`IA sobrecarregada (status ${error.status}) ao ler cadeia de custódia: ${error.message}`);
+        throw new ServiceUnavailableException(
+          'A IA de leitura automática está temporariamente sobrecarregada. Tente novamente em alguns minutos — ou preencha o formulário manualmente, sem precisar esperar.',
+        );
+      }
+      throw error;
+    }
 
     const textBlock = response.content.find((block) => block.type === 'text');
     if (!textBlock || textBlock.type !== 'text') {

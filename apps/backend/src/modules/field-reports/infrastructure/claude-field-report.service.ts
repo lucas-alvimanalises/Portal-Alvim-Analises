@@ -1,6 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Anthropic from '@anthropic-ai/sdk';
+import Anthropic, { APIError } from '@anthropic-ai/sdk';
 import { AppConfig } from '../../../config/configuration';
 
 const MODEL = 'claude-sonnet-5';
@@ -58,7 +58,12 @@ export class ClaudeFieldReportService {
 
   constructor(configService: ConfigService) {
     const appConfig = configService.get<AppConfig>('app')!;
-    this.client = appConfig.anthropicApiKey ? new Anthropic({ apiKey: appConfig.anthropicApiKey }) : null;
+    // maxRetries acima do padrão do SDK (2) — mesmo raciocínio de
+    // ClaudeCertificateOcrService/ClaudeOcrService: picos de sobrecarga do
+    // Claude (529) costumam durar só alguns segundos.
+    this.client = appConfig.anthropicApiKey
+      ? new Anthropic({ apiKey: appConfig.anthropicApiKey, maxRetries: 5 })
+      : null;
   }
 
   async generateSummary(input: FieldReportSummaryInput): Promise<string> {
@@ -68,11 +73,22 @@ export class ClaudeFieldReportService {
       );
     }
 
-    const response = await this.client.messages.create({
-      model: MODEL,
-      max_tokens: 400,
-      messages: [{ role: 'user', content: buildPrompt(input) }],
-    });
+    let response;
+    try {
+      response = await this.client.messages.create({
+        model: MODEL,
+        max_tokens: 400,
+        messages: [{ role: 'user', content: buildPrompt(input) }],
+      });
+    } catch (error) {
+      if (error instanceof APIError && (error.status === 529 || error.status === 429 || error.status === 503)) {
+        this.logger.warn(`IA sobrecarregada (status ${error.status}) ao gerar relatório de campo: ${error.message}`);
+        throw new ServiceUnavailableException(
+          'A IA de geração de relatório está temporariamente sobrecarregada. Tente novamente em alguns minutos.',
+        );
+      }
+      throw error;
+    }
 
     const textBlock = response.content.find((block) => block.type === 'text');
     if (!textBlock || textBlock.type !== 'text' || !textBlock.text.trim()) {
