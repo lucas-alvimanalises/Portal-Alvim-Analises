@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check } from 'lucide-react-native';
-import { Role, ScheduleDto, UserDto } from '@portal-alvim/shared';
+import { isFieldEligibleStaff, ScheduleDto, UserDto } from '@portal-alvim/shared';
 import { schedulesApi } from '../lib/api/schedules.api';
 import { usersApi } from '../lib/api/users.api';
 import { getApiErrorMessage } from '../lib/api/client';
@@ -58,10 +58,9 @@ export function AllocateScheduleModal({
 
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
   // Gestor e Admin também podem ser designados responsáveis de campo, além
-  // de Técnico — mesmo critério do seletor equivalente no portal web.
-  const technicianOptions = (users ?? []).filter(
-    (u) => u.active && (u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN),
-  );
+  // de Técnico — mesmo critério do seletor equivalente no portal web
+  // (isFieldEligibleStaff já cobre `active`, sem precisar checar de novo aqui).
+  const technicianOptions = (users ?? []).filter(isFieldEligibleStaff);
 
   const mutation = useMutation({
     mutationFn: () => {

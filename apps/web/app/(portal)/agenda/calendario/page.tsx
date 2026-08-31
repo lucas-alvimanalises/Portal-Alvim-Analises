@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { CalendarNoteDto, Role, ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
+import { CalendarNoteDto, isFieldEligibleStaff, ScheduleDto, ScheduleStatus } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../lib/api/schedules.api';
 import { usersApi } from '../../../../lib/api/users.api';
 import { calendarNotesApi } from '../../../../lib/api/calendar-notes.api';
@@ -71,11 +71,12 @@ export default function CalendarioPage() {
 
   const activeSchedules = (schedules ?? []).filter((s) => s.status !== ScheduleStatus.CANCELLED);
 
-  // Gestor e Admin também podem ir a campo como responsável — mesma lista
-  // de pessoas elegíveis usada no seletor de técnico (ver
-  // ScheduleForm/ConfirmDropModal).
+  // Mesma lista de pessoas elegíveis usada no seletor de técnico (ver
+  // ScheduleForm/ConfirmDropModal/isFieldEligibleStaff) — Gestor e Admin
+  // também podem ir a campo, contas genéricas (ex.: "Administrador Alvim")
+  // e desativadas ficam de fora.
   const technicalStaff = (users ?? [])
-    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN)
+    .filter(isFieldEligibleStaff)
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const technicianColors = buildTechnicianColorMap(technicalStaff);
 
@@ -166,7 +167,7 @@ export default function CalendarioPage() {
               />
             </div>
             <div style={{ flex: 1, minWidth: 260 }}>
-              <ToBeScheduledPanel schedules={toBeScheduled} technicianColors={technicianColors} />
+              <ToBeScheduledPanel schedules={toBeScheduled} />
             </div>
           </div>
         </DndContext>

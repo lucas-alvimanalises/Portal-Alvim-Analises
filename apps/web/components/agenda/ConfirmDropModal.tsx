@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Role, ScheduleDto } from '@portal-alvim/shared';
+import { isFieldEligibleStaff, ScheduleDto } from '@portal-alvim/shared';
 import { usersApi } from '../../lib/api/users.api';
 import { schedulesApi } from '../../lib/api/schedules.api';
 import { MultiSelect } from '../forms/MultiSelect';
@@ -28,9 +28,10 @@ export function ConfirmDropModal({ schedule, targetDayKey, onClose }: ConfirmDro
 
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
   // Gestor e Admin também podem ser designados responsáveis de campo, além
-  // de Técnico.
+  // de Técnico — contas genéricas/desativadas ficam de fora (ver
+  // isFieldEligibleStaff).
   const technicianOptions = (users ?? [])
-    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN)
+    .filter(isFieldEligibleStaff)
     .map((u) => ({ value: u.id, label: u.name }));
 
   const mutation = useMutation({

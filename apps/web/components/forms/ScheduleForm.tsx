@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import {
   CreateSchedulePayload,
+  isFieldEligibleStaff,
   MaintenanceConflictDto,
-  Role,
   ScheduleDto,
   ScheduleSamplingPointPayload,
 } from '@portal-alvim/shared';
@@ -58,9 +58,10 @@ export function ScheduleForm({ defaultValues, onSubmit, submitLabel }: ScheduleF
   const { data: compounds } = useQuery({ queryKey: ['compounds'], queryFn: compoundsApi.list });
   const { data: users } = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
   // Gestor e Admin também podem ser designados responsáveis de campo, além
-  // de Técnico.
+  // de Técnico — contas genéricas/desativadas ficam de fora (ver
+  // isFieldEligibleStaff).
   const technicianOptions = (users ?? [])
-    .filter((u) => u.role === Role.TECHNICIAN || u.role === Role.MANAGER || u.role === Role.ADMIN)
+    .filter(isFieldEligibleStaff)
     .map((u) => ({ value: u.id, label: u.name }));
 
   // Seleção de pontos + compostos (com quantidade) por ponto, no formato do payload da API.
