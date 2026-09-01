@@ -12,6 +12,17 @@ const MONTH_LABELS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
+// Cada amostra de Siloxanos consome 80 mL de metanol na preparação — pedido
+// do usuário: mostrar isso junto da quantidade de amostras (não só o total
+// de amostradores), pra organizar o estoque de metanol sem precisar fazer a
+// conta de cabeça. Nenhum outro composto tem esse consumo associado.
+const SILOXANOS_CODE = '11000';
+const METHANOL_ML_PER_SAMPLE = 80;
+
+function formatMethanolMl(sampleCount: number): string {
+  return (sampleCount * METHANOL_ML_PER_SAMPLE).toLocaleString('pt-BR');
+}
+
 interface BreakdownItem {
   key: string;
   clientName: string;
@@ -111,7 +122,14 @@ function CompoundCard({ summary }: { summary: CompoundSummary }) {
           <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
             {summary.code} - {summary.name}
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700, marginTop: 4 }}>{summary.total}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+            <span style={{ fontSize: 28, fontWeight: 700 }}>{summary.total}</span>
+            {summary.code === SILOXANOS_CODE && (
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-primary)' }}>
+                ≈ {formatMethanolMl(summary.total)} mL metanol
+              </span>
+            )}
+          </div>
         </div>
         <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>
           {expanded ? '▲' : '▼'}
@@ -134,7 +152,14 @@ function CompoundCard({ summary }: { summary: CompoundSummary }) {
               <span>
                 {item.clientName} <span style={{ color: 'var(--color-text-muted)' }}>· {item.samplingPointName}</span>
               </span>
-              <strong>{item.quantity}</strong>
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <strong>{item.quantity}</strong>
+                {summary.code === SILOXANOS_CODE && (
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                    ({formatMethanolMl(item.quantity)} mL)
+                  </span>
+                )}
+              </span>
             </div>
           ))}
         </div>
