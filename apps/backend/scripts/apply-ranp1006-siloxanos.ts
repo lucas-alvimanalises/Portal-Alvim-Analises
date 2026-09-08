@@ -21,6 +21,12 @@ const SILOXANOS_PARAMETER_NAME = 'Concentração Total de Siloxanos';
 const SILOXANOS_LIMIT = 0.3;
 const SILOXANOS_LIMIT_UNIT = 'mg Si/m³';
 
+// Gás Verde S/A — Molegate Entrada (certificado 11127/25): data de análise
+// registrada (05/09/2026) está sob suspeita — o nome do arquivo original
+// cita "agosto 2025", possível erro de leitura por IA. Fica de fora desta
+// rodada até a data real ser confirmada, pra não classificar errado.
+const EXCLUDED_SAMPLE_IDS = new Set(['bd3e3c88-a0e4-4d33-9907-cfff2a87bab8']);
+
 async function main() {
   const compound = await prisma.compound.findUnique({ where: { code: SILOXANOS_COMPOUND_CODE } });
   if (!compound) {
@@ -42,8 +48,13 @@ async function main() {
   let alreadyCorrect = 0;
   let skippedOldRule = 0;
   let skippedNoData = 0;
+  let skippedExcluded = 0;
 
   for (const sample of samples) {
+    if (EXCLUDED_SAMPLE_IDS.has(sample.id)) {
+      skippedExcluded++;
+      continue;
+    }
     const certificate = sample.certificates[0];
     const row = sample.resultRows[0];
     if (!certificate || !row) {
@@ -83,7 +94,7 @@ async function main() {
   console.log(
     `Resumo: ${toFix} linha(s) ${APPLY ? 'corrigida(s)' : 'seriam corrigidas'}, ` +
       `${alreadyCorrect} já estavam certas, ${skippedOldRule} analisadas antes de 13/08/2026 (regra antiga mantida), ` +
-      `${skippedNoData} sem certificado/resultado ainda.`,
+      `${skippedNoData} sem certificado/resultado ainda, ${skippedExcluded} excluída(s) por data em dúvida.`,
   );
   if (!APPLY) {
     console.log('Modo DRY RUN — nada foi gravado. Rode de novo com --apply pra aplicar de verdade.');
