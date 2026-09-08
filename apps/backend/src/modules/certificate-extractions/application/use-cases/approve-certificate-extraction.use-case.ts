@@ -41,6 +41,16 @@ function parseRequiredText(value: string, fieldLabel: string): string {
   return value.trim();
 }
 
+// RANP 1006 (ANP) substitui a RANP 886 a partir de 13/08/2026: o limite de
+// Siloxanos no biometano continua 0,30 mg Si/m³, mas a faixa de "atenção"
+// (0,21 a 0,30 — que antes obrigava reamostragem semanal) deixou de existir
+// na norma nova. Resultado de amostra analisada a partir dessa data vira só
+// Conforme/Não Conforme contra o limite; análises anteriores continuam sob
+// a regra antiga (RANP 886), refletindo a norma vigente em cada uma
+// (confirmado com o usuário — nada retroage pra antes de 13/08/2026).
+const RANP_1006_EFFECTIVE_DATE = new Date('2026-08-13T00:00:00Z');
+const SILOXANOS_ANALYTE_KEY = 'concentracaoTotalSiloxanos';
+
 @Injectable()
 export class ApproveCertificateExtractionUseCase {
   constructor(
@@ -136,13 +146,20 @@ export class ApproveCertificateExtractionUseCase {
     const isBiogas = sample.samplingPoint?.name === 'Biogás';
 
     function mergeRow(parameterName: string, resultText: string, unit: string, analyte?: CertificateAnalyteConfig) {
+      // Siloxanos analisado a partir de 13/08/2026 (RANP 1006): ignora o
+      // warningThreshold do template (0,21) — só o limite de 0,30 vale.
+      const applicableWarningThreshold =
+        analyte?.key === SILOXANOS_ANALYTE_KEY && analysisDate >= RANP_1006_EFFECTIVE_DATE
+          ? undefined
+          : analyte?.warningThreshold;
+
       const compliance =
         analyte && !isBiogas
-          ? computeCompliance(resultText, analyte.regulatoryLimit, analyte.warningThreshold, analyte.regulatoryMin)
+          ? computeCompliance(resultText, analyte.regulatoryLimit, applicableWarningThreshold, analyte.regulatoryMin)
           : undefined;
       const specLimit =
         analyte?.regulatoryLimit !== undefined && analyte.limitUnit && !isBiogas
-          ? formatRegulatoryLimit(analyte.regulatoryLimit, analyte.limitUnit, analyte.warningThreshold, analyte.regulatoryMin)
+          ? formatRegulatoryLimit(analyte.regulatoryLimit, analyte.limitUnit, applicableWarningThreshold, analyte.regulatoryMin)
           : undefined;
 
       const existingRow = rowsByParameterName.get(parameterName);
