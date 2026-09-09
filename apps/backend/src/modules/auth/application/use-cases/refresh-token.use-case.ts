@@ -51,9 +51,12 @@ export class RefreshTokenUseCase {
       data: { tokenHash: this.tokenService.hashRefreshToken(newRefreshToken) },
     });
 
+    // orderBy explícito: mesma ordem sempre, do login até qualquer refresh
+    // futuro — ver login.use-case.ts pro mesmo ajuste e o motivo.
     const clientLinks = await this.prisma.clientUser.findMany({
       where: { userId: user.id },
       select: { clientId: true },
+      orderBy: { clientId: 'asc' },
     });
     const accessToken = this.tokenService.signAccessToken(
       toAuthenticatedUser(

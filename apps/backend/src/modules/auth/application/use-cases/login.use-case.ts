@@ -25,9 +25,14 @@ export class LoginUseCase {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
+    // orderBy explícito: sem isso a ordem não é garantida entre execuções
+    // (achado real — ver ListSamplesUseCase), e clientIds[0] é usado como
+    // "empresa padrão" em vários lugares (resolveActiveClientId) — precisa
+    // ser estável do login até o refresh, senão o "padrão" muda sozinho.
     const clientLinks = await this.prisma.clientUser.findMany({
       where: { userId: user.id },
       select: { clientId: true },
+      orderBy: { clientId: 'asc' },
     });
     const authenticatedUser = toAuthenticatedUser(
       user,
