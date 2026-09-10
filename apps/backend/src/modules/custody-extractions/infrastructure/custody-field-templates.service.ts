@@ -18,4 +18,13 @@ export class CustodyFieldTemplatesService {
   findById(id: string) {
     return this.prisma.custodyFieldTemplate.findUnique({ where: { id } });
   }
+
+  // Todos os modelos cadastrados, ordenados pelo código do composto (11000,
+  // 12000, ...) — usado no painel "Imprimir Cadeias de Custódia Avulso".
+  findAll() {
+    return this.prisma.custodyFieldTemplate.findMany({
+      include: { compound: { select: { id: true, code: true, name: true } } },
+      orderBy: { compound: { code: 'asc' } },
+    });
+  }
 }

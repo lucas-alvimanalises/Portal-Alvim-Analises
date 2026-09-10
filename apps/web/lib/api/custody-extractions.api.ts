@@ -1,4 +1,4 @@
-import { CustodyExtractedData, CustodyExtractionDto } from '@portal-alvim/shared';
+import { CustodyBlankTemplateDto, CustodyExtractedData, CustodyExtractionDto } from '@portal-alvim/shared';
 import { apiClient } from './client';
 
 export const custodyExtractionsApi = {
@@ -40,4 +40,16 @@ export const custodyExtractionsApi = {
   // Cadeias de custódia em branco (um PDF só, uma página por composto do
   // agendamento) pra levar a campo — ver "Organizar Serviço".
   downloadBlankUrl: (scheduleId: string) => `/api/backend/custody-extractions/blank/${scheduleId}`,
+  // Modelos de cadeia disponíveis pra impressão avulsa (painel em Cadeia de
+  // Custódia).
+  listBlankTemplates: () =>
+    apiClient.get<CustodyBlankTemplateDto[]>('custody-extractions/templates'),
+  // URL pronta pra window.open — PDF com N cópias em branco de cada modelo.
+  blankAvulsoUrl: (items: { compoundId: string; quantity: number }[]) => {
+    const q = items
+      .filter((it) => it.quantity > 0)
+      .map((it) => `${it.compoundId}:${it.quantity}`)
+      .join(',');
+    return `/api/backend/custody-extractions/blank-avulso?items=${encodeURIComponent(q)}`;
+  },
 };

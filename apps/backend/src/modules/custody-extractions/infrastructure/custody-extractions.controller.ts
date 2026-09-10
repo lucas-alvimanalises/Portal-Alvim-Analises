@@ -17,7 +17,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
-import { AuthenticatedUser, Role } from '@portal-alvim/shared';
+import { AuthenticatedUser, CustodyBlankTemplateDto, Role } from '@portal-alvim/shared';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { CurrentUser } from '../../../common/decorators/current-user.decorator';
@@ -37,6 +37,8 @@ import { DeleteCustodyExtractionUseCase } from '../application/use-cases/delete-
 import { AttachExistingCustodyDocumentUseCase } from '../application/use-cases/attach-existing-custody-document.use-case';
 import { DownloadCustodyDocumentBySampleUseCase } from '../application/use-cases/download-custody-document-by-sample.use-case';
 import { DownloadBlankCustodyChainsUseCase } from '../application/use-cases/download-blank-custody-chains.use-case';
+import { DownloadBlankAvulsoCustodyChainsUseCase } from '../application/use-cases/download-blank-avulso-custody-chains.use-case';
+import { CustodyFieldTemplatesService } from './custody-field-templates.service';
 import { toCustodyExtractionDto } from '../application/custody-extraction.mapper';
 
 // Tem dono (via Sample.clientId) — diferente de custody-documents, aqui
@@ -58,6 +60,8 @@ export class CustodyExtractionsController {
     private readonly attachExistingCustodyDocumentUseCase: AttachExistingCustodyDocumentUseCase,
     private readonly downloadCustodyDocumentBySampleUseCase: DownloadCustodyDocumentBySampleUseCase,
     private readonly downloadBlankCustodyChainsUseCase: DownloadBlankCustodyChainsUseCase,
+    private readonly downloadBlankAvulsoCustodyChainsUseCase: DownloadBlankAvulsoCustodyChainsUseCase,
+    private readonly custodyFieldTemplatesService: CustodyFieldTemplatesService,
   ) {}
 
   // Baixa o PDF de cadeia de custódia já aprovado direto pela amostra —
@@ -91,6 +95,42 @@ export class CustodyExtractionsController {
   @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
   async downloadBlank(@Param('scheduleId') scheduleId: string, @Res() res: Response) {
     const { buffer, filename } = await this.downloadBlankCustodyChainsUseCase.execute(scheduleId);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
+    });
+    res.send(buffer);
+  }
+
+  // Modelos de cadeia de custódia disponíveis pra impressão em branco avulsa
+  // (painel "Imprimir Cadeias de Custódia Avulso"). Rota estática — antes de
+  // ":id".
+  @Get('templates')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
+  async listTemplates(): Promise<CustodyBlankTemplateDto[]> {
+    const templates = await this.custodyFieldTemplatesService.findAll();
+    return templates.map((t) => ({
+      compoundId: t.compound.id,
+      compoundCode: t.compound.code,
+      compoundName: t.compound.name,
+    }));
+  }
+
+  // PDF com N cópias em branco de cada modelo escolhido, sem vínculo com
+  // agendamento. `items` = "<compoundId>:<qtd>,<compoundId>:<qtd>" (GET pra
+  // poder abrir direto com window.open, igual /blank/:scheduleId).
+  @Get('blank-avulso')
+  @Roles(Role.ADMIN, Role.MANAGER, Role.TECHNICIAN)
+  async downloadBlankAvulso(@Query('items') items: string | undefined, @Res() res: Response) {
+    const parsed = (items ?? '')
+      .split(',')
+      .map((pair) => pair.trim())
+      .filter(Boolean)
+      .map((pair) => {
+        const [compoundId, quantity] = pair.split(':');
+        return { compoundId, quantity: Number.parseInt(quantity, 10) || 0 };
+      });
+    const { buffer, filename } = await this.downloadBlankAvulsoCustodyChainsUseCase.execute(parsed);
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,

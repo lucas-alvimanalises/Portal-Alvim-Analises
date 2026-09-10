@@ -11,6 +11,19 @@ export interface CustodyExtractedData {
   table: Record<string, Record<string, CustodyExtractedValue>>;
 }
 
+// Modelo de cadeia de custódia disponível pra impressão em branco (avulso),
+// sem vínculo com agendamento — ver "Imprimir Cadeias de Custódia Avulso"
+// na tela de Cadeia de Custódia.
+export interface CustodyBlankTemplateDto {
+  compoundId: string;
+  compoundCode: string;
+  compoundName: string;
+}
+
+// Teto de cópias por PDF gerado no avulso (mesclar centenas de páginas fica
+// lento) — compartilhado entre a validação do backend e o aviso na tela.
+export const CUSTODY_BLANK_AVULSO_MAX_COPIES = 100;
+
 export type CustodyExtractionStatus = 'PROCESSING' | 'NEEDS_REVIEW' | 'APPROVED' | 'FAILED';
 
 export interface CustodyExtractionDto {

@@ -21,6 +21,7 @@ import { DeleteCustodyExtractionUseCase } from './application/use-cases/delete-c
 import { AttachExistingCustodyDocumentUseCase } from './application/use-cases/attach-existing-custody-document.use-case';
 import { DownloadCustodyDocumentBySampleUseCase } from './application/use-cases/download-custody-document-by-sample.use-case';
 import { DownloadBlankCustodyChainsUseCase } from './application/use-cases/download-blank-custody-chains.use-case';
+import { DownloadBlankAvulsoCustodyChainsUseCase } from './application/use-cases/download-blank-avulso-custody-chains.use-case';
 
 @Module({
   imports: [SamplesModule, AttachmentsModule, CustodyDocumentsModule, UsersModule, SamplingControlModule],
@@ -41,6 +42,7 @@ import { DownloadBlankCustodyChainsUseCase } from './application/use-cases/downl
     AttachExistingCustodyDocumentUseCase,
     DownloadCustodyDocumentBySampleUseCase,
     DownloadBlankCustodyChainsUseCase,
+    DownloadBlankAvulsoCustodyChainsUseCase,
   ],
 })
 export class CustodyExtractionsModule {}

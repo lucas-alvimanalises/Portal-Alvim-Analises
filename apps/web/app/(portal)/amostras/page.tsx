@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { compoundsApi } from '../../../lib/api/compounds.api';
 import { custodyDocumentsApi } from '../../../lib/api/custody-documents.api';
 import { ApiError } from '../../../lib/api/client';
 import { TableSkeleton } from '../../../components/shared/Skeleton';
+import { BlankAvulsoPanel } from '../../../components/custody/BlankAvulsoPanel';
 
 // Tela de Cadeia de Custódia em formato de "pastas": uma pasta por composto
 // (11000 - Siloxanos, 12000 - VOCs, ...), espelhando a organização de
@@ -13,6 +15,7 @@ import { TableSkeleton } from '../../../components/shared/Skeleton';
 // > ano). Cada pasta guarda os PDFs de cadeia de custódia daquele composto.
 export default function CadeiaDeCustodiaPage() {
   const queryClient = useQueryClient();
+  const [showBlankAvulso, setShowBlankAvulso] = useState(false);
   const { data: compounds, isLoading } = useQuery({
     queryKey: ['compounds'],
     queryFn: compoundsApi.list,
@@ -54,6 +57,13 @@ export default function CadeiaDeCustodiaPage() {
           <button
             type="button"
             className="btn btn-secondary"
+            onClick={() => setShowBlankAvulso((v) => !v)}
+          >
+            Imprimir Cadeias de Custódia Avulso
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
             onClick={() => {
               if (window.confirm('Procurar e remover cadeias de custódia duplicadas?')) {
                 dedupeMutation.mutate();
@@ -73,6 +83,8 @@ export default function CadeiaDeCustodiaPage() {
           </button>
         </div>
       </div>
+
+      {showBlankAvulso && <BlankAvulsoPanel onClose={() => setShowBlankAvulso(false)} />}
 
       {syncMutation.isError && (
         <p style={{ fontSize: 13, color: 'var(--color-danger)', marginTop: -12 }}>
