@@ -15,8 +15,7 @@ const COMPOSTOS_SULFURADOS_CUSTODY_TEMPLATE: CustodyTemplateSchema = {
   fields: [
     { key: 'relatorioCampo', label: 'Relatório de Campo nº', type: 'text', required: false, systemGenerated: true },
     { key: 'dataAmostragemCampo', label: 'Data Amostragem em Campo', type: 'date', required: true },
-    { key: 'horaAmostragemCampo', label: 'Hora Amostragem em Campo', type: 'time', required: false },
-    { key: 'contatoEmpresa', label: 'Contato Empresa', type: 'text', required: true },
+    { key: 'empresa', label: 'Empresa', type: 'text', required: true },
     { key: 'endereco', label: 'Endereço', type: 'text', required: true },
     {
       key: 'localAmostragem',
@@ -50,9 +49,10 @@ const COMPOSTOS_SULFURADOS_CUSTODY_TEMPLATE: CustodyTemplateSchema = {
       type: 'text',
       required: true,
     },
+    // Duas BAGs (amostragem em duplicata, não triplicata) — confirmado com
+    // o usuário em 10/09/2026.
     { key: 'bagIdentificacao1', label: 'BAG IDENTIFICAÇÃO -', type: 'text', required: true },
     { key: 'bagIdentificacao2', label: 'BAG IDENTIFICAÇÃO -', type: 'text', required: false },
-    { key: 'bagIdentificacao3', label: 'BAG IDENTIFICAÇÃO -', type: 'text', required: false },
     {
       key: 'observacoes',
       label: 'Observações (Descrever como foi o ocorrido durante a amostragem) TIRAR FOTO:',
@@ -64,6 +64,8 @@ const COMPOSTOS_SULFURADOS_CUSTODY_TEMPLATE: CustodyTemplateSchema = {
   documentMeta: {
     responsavel: 'Gilberto Alvim',
     emissao: '22/05/2026',
+    revisaoLabel: 'Revisão 01',
+    revisaoData: '10/09/2026',
   },
   topRowFieldKeys: { reportNumber: 'relatorioCampo', date: 'dataAmostragemCampo' },
 };

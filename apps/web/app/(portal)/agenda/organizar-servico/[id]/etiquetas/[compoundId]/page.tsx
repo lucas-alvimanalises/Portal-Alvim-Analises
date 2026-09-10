@@ -63,6 +63,9 @@ export default function ImprimirEtiquetasPage() {
   });
 
   const labels = confirmedLabels ?? preview?.labels ?? [];
+  // Etiquetas numeradas por frasco: 3 no geral, 2 pra Compostos Sulfurados
+  // (duplicata) — vem do backend (labelsPerSample), aqui só reflete no texto.
+  const numberedPerBottle = labels.length > 0 ? Math.max(...labels.map((l) => l.labelIndex)) : 3;
   const isConfirmed = !!confirmedLabels || !!preview?.confirmed;
   const isSiloxanos = labels[0]?.compoundCode === SILOXANOS_CODE;
   const sheets = buildSheets(labels, isSiloxanos);
@@ -106,7 +109,9 @@ export default function ImprimirEtiquetasPage() {
             <p style={{ color: 'var(--color-text-muted)', marginBottom: 4 }}>
               {labels[0].clientName} — {labels[0].compoundName} ({labels[0].samplingPointName}) —{' '}
               {sheets.length} etiqueta(s)
-              {isSiloxanos ? ' (3 numeradas + 1 em branco por amostra)' : ' (3 numeradas por amostra)'}.
+              {isSiloxanos
+                ? ` (${numberedPerBottle} numeradas + 1 em branco por amostra)`
+                : ` (${numberedPerBottle} numeradas por amostra)`}.
               Confira o cabo da Zebra ZD-220 antes de imprimir (essa impressora não imprime em rede).
             </p>
             <p style={{ fontSize: 13, marginTop: 0, marginBottom: 12 }}>

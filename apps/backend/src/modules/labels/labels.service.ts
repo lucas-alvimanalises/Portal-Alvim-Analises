@@ -2,12 +2,16 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PreviewLabelsResponse, PrintedLabelDto } from '@portal-alvim/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
-// Cada amostra (frasco) imprime 3 etiquetas de número sequencial — o
-// Siloxanos ainda soma +1 etiqueta em branco por cima dessas 3, mas isso é
-// só decisão de exibição da página de impressão (ver
-// ImprimirEtiquetasPage), não gera PrintedLabel (a etiqueta em branco não
-// tem número pra guardar/nunca-repetir).
-const LABELS_PER_SAMPLE = 3;
+// Quantas etiquetas numeradas cada amostra (frasco) imprime, por composto:
+// Compostos Sulfurados (Bags, código 22000) coleta em duplicata → 2
+// etiquetas; os demais (hoje só Siloxanos) em triplicata → 3. O Siloxanos
+// ainda soma +1 etiqueta em branco por cima dessas 3, mas isso é só decisão
+// de exibição da página de impressão (ver ImprimirEtiquetasPage), não gera
+// PrintedLabel (a etiqueta em branco não tem número pra guardar/nunca-repetir).
+const COMPOSTOS_SULFURADOS_CODE = '22000';
+function labelsPerSample(compoundCode: string): number {
+  return compoundCode === COMPOSTOS_SULFURADOS_CODE ? 2 : 3;
+}
 
 interface Slot {
   samplingPointId: string;
@@ -99,8 +103,9 @@ export class LabelsService {
       const samplingPointId = pointCompound.scheduleSamplingPoint.samplingPointId;
       const samplingPointName = pointCompound.scheduleSamplingPoint.samplingPoint.name;
 
+      const perSample = labelsPerSample(compound.code);
       for (let bottleIndex = 1; bottleIndex <= pointCompound.quantity; bottleIndex++) {
-        for (let labelIndex = 1; labelIndex <= LABELS_PER_SAMPLE; labelIndex++) {
+        for (let labelIndex = 1; labelIndex <= perSample; labelIndex++) {
           slots.push({ samplingPointId, samplingPointName, bottleIndex, labelIndex });
         }
       }
