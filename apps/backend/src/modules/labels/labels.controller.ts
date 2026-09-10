@@ -5,6 +5,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { LabelsService } from './labels.service';
 import { PrintLabelsDto } from './dto/print-labels.dto';
+import { ConfirmServiceLabelsDto } from './dto/confirm-service-labels.dto';
 
 // Acesso igual "Organizar Serviço" — qualquer colaborador da Alvim com o
 // portal pode imprimir (ADMIN/Gestor/Técnico), Cliente não participa da
@@ -30,5 +31,21 @@ export class LabelsController {
   @Post('confirm')
   confirm(@Body() dto: PrintLabelsDto, @CurrentUser() user: AuthenticatedUser) {
     return this.labelsService.confirmPrint(dto.scheduleId, dto.compoundId, user.id);
+  }
+
+  // Botão "Imprimir Etiquetas Serviço" — todos os grupos de etiqueta do
+  // agendamento de uma vez. Preview não grava nada; confirm consome as
+  // sequências de todos os compostos.
+  @Get('service-preview')
+  servicePreview(@Query('scheduleId') scheduleId: string) {
+    if (!scheduleId) {
+      throw new BadRequestException('Informe scheduleId.');
+    }
+    return this.labelsService.servicePreview(scheduleId);
+  }
+
+  @Post('service-confirm')
+  serviceConfirm(@Body() dto: ConfirmServiceLabelsDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.labelsService.serviceConfirm(dto.scheduleId, user.id);
   }
 }

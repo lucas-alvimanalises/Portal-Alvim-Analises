@@ -34,3 +34,30 @@ export interface PrintLabelsPayload {
   scheduleId: string;
   compoundId: string;
 }
+
+// Compostos que hoje imprimem etiqueta física, na ordem em que saem no
+// botão "Imprimir Etiquetas Serviço" (uma etiqueta divisória com o nome do
+// composto antes de cada grupo, pra separar os rolos): Siloxanos, depois
+// Compostos Sulfurados, depois VOCs.
+export const LABEL_COMPOUND_CODES = ['11000', '22000', '12000'] as const;
+
+export interface ServiceLabelGroupDto {
+  compoundId: string;
+  compoundCode: string;
+  compoundName: string;
+  labels: PrintedLabelDto[];
+  // true quando TODAS as etiquetas deste grupo já foram impressas antes.
+  confirmed: boolean;
+}
+
+// GET /labels/service-preview — um grupo por composto de etiqueta presente
+// no agendamento, na ordem de LABEL_COMPOUND_CODES. Mesma semântica de
+// preview: não grava nada; POST /labels/service-confirm reserva os números
+// de todos os grupos de uma vez.
+export interface ServiceLabelsPreviewResponse {
+  groups: ServiceLabelGroupDto[];
+}
+
+export interface ConfirmServiceLabelsPayload {
+  scheduleId: string;
+}

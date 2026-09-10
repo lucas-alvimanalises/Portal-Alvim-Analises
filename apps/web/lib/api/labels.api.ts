@@ -1,4 +1,9 @@
-import { PreviewLabelsResponse, PrintedLabelDto, PrintLabelsPayload } from '@portal-alvim/shared';
+import {
+  PreviewLabelsResponse,
+  PrintedLabelDto,
+  PrintLabelsPayload,
+  ServiceLabelsPreviewResponse,
+} from '@portal-alvim/shared';
 import { apiClient } from './client';
 
 export const labelsApi = {
@@ -13,4 +18,10 @@ export const labelsApi = {
   // números já atribuídos em vez de gerar novos.
   confirm: (payload: PrintLabelsPayload) =>
     apiClient.post<PrintedLabelDto[]>('labels/confirm', payload),
+  // "Imprimir Etiquetas Serviço" — todos os grupos de etiqueta do
+  // agendamento (Siloxanos/Compostos Sulfurados/VOCs) de uma vez.
+  servicePreview: (scheduleId: string) =>
+    apiClient.get<ServiceLabelsPreviewResponse>(`labels/service-preview?scheduleId=${scheduleId}`),
+  serviceConfirm: (scheduleId: string) =>
+    apiClient.post<ServiceLabelsPreviewResponse>('labels/service-confirm', { scheduleId }),
 };

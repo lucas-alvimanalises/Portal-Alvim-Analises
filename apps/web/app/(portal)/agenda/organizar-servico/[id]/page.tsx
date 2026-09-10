@@ -27,9 +27,9 @@ export default function OrganizarServicoPage() {
   }
 
   const compounds = schedule.samplingPoints.flatMap((point) => point.compounds);
-  const siloxanos = compounds.find((c) => c.code === SILOXANOS_CODE);
-  const vocs = compounds.find((c) => c.code === VOCS_CODE);
-  const enxofre = compounds.find((c) => c.code === ENXOFRE_CODE);
+  const hasLabelCompound = compounds.some((c) =>
+    [SILOXANOS_CODE, VOCS_CODE, ENXOFRE_CODE].includes(c.code),
+  );
 
   return (
     <div>
@@ -53,36 +53,14 @@ export default function OrganizarServicoPage() {
           Imprimir cadeias de custódia
         </button>
 
-        {siloxanos && (
+        {hasLabelCompound && (
           <Link
-            href={`/agenda/organizar-servico/${scheduleId}/etiquetas/${siloxanos.id}`}
+            href={`/agenda/organizar-servico/${scheduleId}/etiquetas`}
             target="_blank"
             className="btn btn-secondary"
             style={{ justifyContent: 'flex-start' }}
           >
-            Imprimir etiqueta de Siloxanos
-          </Link>
-        )}
-
-        {vocs && (
-          <Link
-            href={`/agenda/organizar-servico/${scheduleId}/etiquetas/${vocs.id}`}
-            target="_blank"
-            className="btn btn-secondary"
-            style={{ justifyContent: 'flex-start' }}
-          >
-            Imprimir etiqueta de VOCs
-          </Link>
-        )}
-
-        {enxofre && (
-          <Link
-            href={`/agenda/organizar-servico/${scheduleId}/etiquetas/${enxofre.id}`}
-            target="_blank"
-            className="btn btn-secondary"
-            style={{ justifyContent: 'flex-start' }}
-          >
-            Imprimir etiqueta de Compostos de Enxofre
+            Imprimir Etiquetas Serviço
           </Link>
         )}
 

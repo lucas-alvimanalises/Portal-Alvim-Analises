@@ -1,5 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PreviewLabelsResponse, PrintedLabelDto } from '@portal-alvim/shared';
+import {
+  LABEL_COMPOUND_CODES,
+  PreviewLabelsResponse,
+  PrintedLabelDto,
+  ServiceLabelsPreviewResponse,
+} from '@portal-alvim/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // Quantas etiquetas numeradas cada amostra (frasco) imprime, por composto:
@@ -231,5 +236,63 @@ export class LabelsService {
     });
 
     return this.sortDtos(labels);
+  }
+
+  // Quais compostos de etiqueta (Siloxanos/Compostos Sulfurados/VOCs) fazem
+  // parte deste agendamento, na ordem fixa de LABEL_COMPOUND_CODES.
+  private async labelCompoundsInSchedule(
+    scheduleId: string,
+  ): Promise<{ id: string; code: string; name: string }[]> {
+    const rows = await this.prisma.scheduleSamplingPointCompound.findMany({
+      where: {
+        scheduleSamplingPoint: { scheduleId },
+        compound: { code: { in: [...LABEL_COMPOUND_CODES] } },
+      },
+      select: { compound: { select: { id: true, code: true, name: true } } },
+    });
+    const byCode = new Map(rows.map((r) => [r.compound.code, r.compound]));
+    return LABEL_COMPOUND_CODES.map((code) => byCode.get(code)).filter(
+      (c): c is { id: string; code: string; name: string } => !!c,
+    );
+  }
+
+  // Botão "Imprimir Etiquetas Serviço" — prévia de TODOS os grupos de
+  // etiqueta do agendamento de uma vez. Não grava nada (mesma regra do
+  // preview por composto).
+  async servicePreview(scheduleId: string): Promise<ServiceLabelsPreviewResponse> {
+    const compounds = await this.labelCompoundsInSchedule(scheduleId);
+    const groups = await Promise.all(
+      compounds.map(async (compound) => {
+        const preview = await this.previewLabels(scheduleId, compound.id);
+        return {
+          compoundId: compound.id,
+          compoundCode: compound.code,
+          compoundName: compound.name,
+          labels: preview.labels,
+          confirmed: preview.confirmed,
+        };
+      }),
+    );
+    return { groups };
+  }
+
+  // Confirma a impressão de todos os grupos de etiqueta do agendamento.
+  // Cada composto é confirmado pela mesma rotina idempotente do fluxo por
+  // composto — se um falhar, os já confirmados permanecem e o retry
+  // reaproveita os números.
+  async serviceConfirm(scheduleId: string, userId: string): Promise<ServiceLabelsPreviewResponse> {
+    const compounds = await this.labelCompoundsInSchedule(scheduleId);
+    const groups: ServiceLabelsPreviewResponse['groups'] = [];
+    for (const compound of compounds) {
+      const labels = await this.confirmPrint(scheduleId, compound.id, userId);
+      groups.push({
+        compoundId: compound.id,
+        compoundCode: compound.code,
+        compoundName: compound.name,
+        labels,
+        confirmed: true,
+      });
+    }
+    return { groups };
   }
 }
