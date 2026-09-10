@@ -1,4 +1,18 @@
-import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Res,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { AuthenticatedUser, Role } from '@portal-alvim/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -14,9 +28,41 @@ import { SaveFieldChecklistDto } from './dto/save-field-checklist.dto';
 export class FieldChecklistsController {
   constructor(private readonly fieldChecklistsService: FieldChecklistsService) {}
 
+  // Rotas estáticas antes de ':scheduleId'.
+  @Get('attachments/:attachmentId/file')
+  async downloadAttachment(
+    @Param('attachmentId') attachmentId: string,
+    @Res() res: Response,
+  ) {
+    const { stream, filename, mimeType } =
+      await this.fieldChecklistsService.downloadAttachment(attachmentId);
+    res.set({
+      'Content-Type': mimeType,
+      'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
+    });
+    stream.pipe(res);
+  }
+
+  @Delete('attachments/:attachmentId')
+  removeAttachment(@Param('attachmentId') attachmentId: string) {
+    return this.fieldChecklistsService.removeAttachment(attachmentId);
+  }
+
   @Get(':scheduleId')
   get(@Param('scheduleId') scheduleId: string) {
     return this.fieldChecklistsService.get(scheduleId);
+  }
+
+  // Checklist em branco pra impressão (modelo Alvim, cabeçalho já preenchido
+  // com cliente/serviço/data do agendamento).
+  @Get(':scheduleId/blank')
+  async downloadBlank(@Param('scheduleId') scheduleId: string, @Res() res: Response) {
+    const { buffer, filename } = await this.fieldChecklistsService.getBlankPdf(scheduleId);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
+    });
+    res.send(buffer);
   }
 
   @Put(':scheduleId')
@@ -26,5 +72,15 @@ export class FieldChecklistsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.fieldChecklistsService.save(scheduleId, dto.quantities, user.id);
+  }
+
+  @Post(':scheduleId/attachments')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAttachment(
+    @Param('scheduleId') scheduleId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.fieldChecklistsService.uploadAttachment(scheduleId, file, user.id);
   }
 }

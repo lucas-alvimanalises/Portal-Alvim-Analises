@@ -477,6 +477,12 @@ model ServiceChecklist {
 
   updatedAt DateTime @updatedAt
 
+  // Checklists preenchidos no papel (colaborador que prefere papel imprime
+  // o modelo em branco, preenche à mão e anexa a foto/PDF aqui) — vários
+  // por checklist (frente/verso, várias páginas). Conviver com o
+  // preenchimento digital em `quantities`, não substitui.
+  attachments Attachment[]
+
   @@map("service_checklists")
 }
 
@@ -967,6 +973,9 @@ model Attachment {
 
   plantMaintenanceId String?
   plantMaintenance   PlantMaintenance? @relation(fields: [plantMaintenanceId], references: [id])
+
+  serviceChecklistId String?
+  serviceChecklist   ServiceChecklist? @relation(fields: [serviceChecklistId], references: [id], onDelete: Cascade)
 
   certificate                 Certificate?
   custodyDocument             CustodyDocument?
