@@ -253,7 +253,14 @@ export default function CertificadosPendentesPage() {
                 const isExpanded = expandedSampleId === row.sampleId;
                 return (
                   <Fragment key={row.sampleId}>
-                    <tr style={{ borderTop: index === 0 ? 'none' : '1px solid var(--color-border)' }}>
+                    <tr
+                      // Zebra branca/cinza igual à planilha de Identificação de
+                      // Amostragem, pra diferenciar as linhas de relance
+                      // (surface-muted também funciona no modo escuro).
+                      style={{
+                        background: index % 2 === 1 ? 'var(--color-surface-muted)' : 'transparent',
+                      }}
+                    >
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                         {formatServiceDate(row.serviceDate)}
                       </td>
