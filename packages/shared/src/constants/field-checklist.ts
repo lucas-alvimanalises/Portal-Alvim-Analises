@@ -45,6 +45,8 @@ export const FIELD_CHECKLIST_SECTIONS: FieldChecklistSection[] = [
       { key: 'metanol', label: 'Metanol' },
       { key: 'presilhas_impingers', label: 'Presilhas p/ Impingers' },
       { key: 'etiquetas_siloxanos', label: 'Etiquetas Siloxanos' },
+      { key: 'etiquetas_vocs', label: 'Etiquetas VOCs' },
+      { key: 'etiquetas_compostos_enxofre', label: 'Etiquetas Compostos de Enxofre' },
     ],
   },
   {

@@ -3,14 +3,14 @@ import { PreviewLabelsResponse, PrintedLabelDto } from '@portal-alvim/shared';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // Quantas etiquetas numeradas cada amostra (frasco) imprime, por composto:
-// Compostos Sulfurados (Bags, código 22000) coleta em duplicata → 2
-// etiquetas; os demais (hoje só Siloxanos) em triplicata → 3. O Siloxanos
-// ainda soma +1 etiqueta em branco por cima dessas 3, mas isso é só decisão
-// de exibição da página de impressão (ver ImprimirEtiquetasPage), não gera
-// PrintedLabel (a etiqueta em branco não tem número pra guardar/nunca-repetir).
-const COMPOSTOS_SULFURADOS_CODE = '22000';
+// Compostos Sulfurados (Bags, 22000) e VOCs (12000) coletam em duplicata →
+// 2 etiquetas; Siloxanos (11000) em triplicata → 3 (e ainda soma +1
+// etiqueta em branco, mas isso é só exibição na página de impressão — ver
+// ImprimirEtiquetasPage — não gera PrintedLabel, a em branco não tem número
+// pra guardar/nunca-repetir).
+const TWO_LABEL_COMPOUND_CODES = new Set(['22000', '12000']);
 function labelsPerSample(compoundCode: string): number {
-  return compoundCode === COMPOSTOS_SULFURADOS_CODE ? 2 : 3;
+  return TWO_LABEL_COMPOUND_CODES.has(compoundCode) ? 2 : 3;
 }
 
 interface Slot {

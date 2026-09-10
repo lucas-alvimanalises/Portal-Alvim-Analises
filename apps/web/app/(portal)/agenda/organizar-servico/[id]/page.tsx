@@ -7,9 +7,10 @@ import { schedulesApi } from '../../../../../lib/api/schedules.api';
 import { custodyExtractionsApi } from '../../../../../lib/api/custody-extractions.api';
 import { TableSkeleton } from '../../../../../components/shared/Skeleton';
 
-// Códigos fixos do seed (ver apps/backend/prisma/seed.ts) — únicos dois
-// compostos que hoje precisam de etiqueta física na Zebra ZD-220.
+// Códigos fixos do seed (ver apps/backend/prisma/seed.ts) — compostos que
+// hoje precisam de etiqueta física na Zebra ZD-220.
 const SILOXANOS_CODE = '11000';
+const VOCS_CODE = '12000';
 const ENXOFRE_CODE = '22000';
 
 export default function OrganizarServicoPage() {
@@ -27,6 +28,7 @@ export default function OrganizarServicoPage() {
 
   const compounds = schedule.samplingPoints.flatMap((point) => point.compounds);
   const siloxanos = compounds.find((c) => c.code === SILOXANOS_CODE);
+  const vocs = compounds.find((c) => c.code === VOCS_CODE);
   const enxofre = compounds.find((c) => c.code === ENXOFRE_CODE);
 
   return (
@@ -59,6 +61,17 @@ export default function OrganizarServicoPage() {
             style={{ justifyContent: 'flex-start' }}
           >
             Imprimir etiqueta de Siloxanos
+          </Link>
+        )}
+
+        {vocs && (
+          <Link
+            href={`/agenda/organizar-servico/${scheduleId}/etiquetas/${vocs.id}`}
+            target="_blank"
+            className="btn btn-secondary"
+            style={{ justifyContent: 'flex-start' }}
+          >
+            Imprimir etiqueta de VOCs
           </Link>
         )}
 
