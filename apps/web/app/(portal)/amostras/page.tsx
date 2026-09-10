@@ -48,6 +48,9 @@ export default function CadeiaDeCustodiaPage() {
       <div className="page-header">
         <h1>Cadeia de Custódia</h1>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Link href="/amostras/tabela-controle" className="btn btn-secondary">
+            Tabela de Controle de Amostras
+          </Link>
           <button
             type="button"
             className="btn btn-secondary"
