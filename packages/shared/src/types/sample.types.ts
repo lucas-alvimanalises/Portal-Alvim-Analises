@@ -89,6 +89,11 @@ export interface PendingCertificateDto {
   samplingPointName: string;
   compoundLabel: string;
   hasCompound: boolean;
+  // Nº da amostra física (tubo/vial/cassete) — normalmente vem da cadeia de
+  // custódia, mas pode ser preenchido na mão aqui pra casar o certificado
+  // que está chegando com a amostra certa (pedido do usuário). null quando
+  // ainda não tem cadeia aprovada nem foi digitado.
+  sampleCode: string | null;
   // Técnico(s) responsável(is) pela coleta do serviço — mesma relação
   // Schedule.technicians usada em ScheduleListView; permite filtrar a fila de
   // pendentes por quem coletou (ver especificação de filtros de Certificados

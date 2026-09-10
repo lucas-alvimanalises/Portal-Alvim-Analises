@@ -26,6 +26,7 @@ const columnFilterKeys = [
   'serviceTypeName',
   'samplingPointName',
   'compoundLabel',
+  'sampleCode',
   'technicianLabel',
 ] as const;
 type ColumnFilterKey = (typeof columnFilterKeys)[number];
@@ -36,6 +37,7 @@ const emptyColumnFilters: ColumnFilters = {
   serviceTypeName: '',
   samplingPointName: '',
   compoundLabel: '',
+  sampleCode: '',
   technicianLabel: '',
 };
 const columnFilterLabels: Record<ColumnFilterKey, string> = {
@@ -44,6 +46,7 @@ const columnFilterLabels: Record<ColumnFilterKey, string> = {
   serviceTypeName: 'Tipo de Serviço',
   samplingPointName: 'Ponto de Amostragem',
   compoundLabel: 'Análise',
+  sampleCode: 'Identificação da Amostra',
   technicianLabel: 'Técnico',
 };
 
@@ -54,12 +57,81 @@ function matchesFilters(row: PendingCertificateDto, filters: ColumnFilters): boo
     ['serviceTypeName', row.serviceTypeName],
     ['samplingPointName', row.samplingPointName],
     ['compoundLabel', row.compoundLabel],
+    ['sampleCode', row.sampleCode ?? ''],
     ['technicianLabel', formatTechnicianLabel(row)],
   ];
   return checks.every(([key, value]) => {
     const term = filters[key].trim().toLowerCase();
     return !term || value.toLowerCase().includes(term);
   });
+}
+
+// Célula editável "Identificação da Amostra" — nº da amostra física, pra
+// casar o certificado que está chegando com a amostra certa. Normalmente
+// já vem da cadeia de custódia; aqui dá pra preencher/corrigir na mão.
+// Salva ao sair do campo, só se mudou.
+function SampleCodeCell({
+  row,
+  onSaved,
+}: {
+  row: PendingCertificateDto;
+  onSaved: () => void;
+}) {
+  const [value, setValue] = useState(row.sampleCode ?? '');
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setValue(row.sampleCode ?? '');
+    setDirty(false);
+  }, [row.sampleCode]);
+
+  async function commit() {
+    const trimmed = value.trim();
+    if (trimmed === (row.sampleCode ?? '')) {
+      setDirty(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await samplesApi.update(row.sampleId, { sampleCode: trimmed });
+      setDirty(false);
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <input
+      className="input"
+      style={{
+        width: '100%',
+        minWidth: 130,
+        fontSize: 12,
+        padding: '4px 6px',
+        background: dirty ? 'var(--color-primary-soft)' : 'transparent',
+        border: dirty ? '1px solid var(--color-primary)' : '1px solid transparent',
+      }}
+      value={value}
+      placeholder="—"
+      disabled={saving}
+      onChange={(e) => {
+        setValue(e.target.value);
+        setDirty(true);
+      }}
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') e.currentTarget.blur();
+        if (e.key === 'Escape') {
+          setValue(row.sampleCode ?? '');
+          setDirty(false);
+          e.currentTarget.blur();
+        }
+      }}
+    />
+  );
 }
 
 // Consolida, de todos os serviços do sistema (sem escopo de empresa — só
@@ -170,7 +242,7 @@ export default function CertificadosPendentesPage() {
             <tbody>
               {visibleRows?.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: 16, color: 'var(--color-text-muted)' }}>
+                  <td colSpan={8} style={{ padding: 16, color: 'var(--color-text-muted)' }}>
                     {rows && rows.length > 0
                       ? 'Nenhum resultado para os filtros aplicados.'
                       : 'Nenhum certificado pendente no momento.'}
@@ -189,6 +261,14 @@ export default function CertificadosPendentesPage() {
                       <td style={{ padding: '10px 14px' }}>{row.serviceTypeName}</td>
                       <td style={{ padding: '10px 14px' }}>{row.samplingPointName}</td>
                       <td style={{ padding: '10px 14px' }}>{row.compoundLabel}</td>
+                      <td style={{ padding: '6px 14px', minWidth: 150 }}>
+                        <SampleCodeCell
+                          row={row}
+                          onSaved={() =>
+                            queryClient.invalidateQueries({ queryKey: ['pending-certificates'] })
+                          }
+                        />
+                      </td>
                       <td style={{ padding: '10px 14px' }}>{formatTechnicianLabel(row)}</td>
                       <td style={{ padding: '10px 14px', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -211,7 +291,7 @@ export default function CertificadosPendentesPage() {
                     </tr>
                     {isExpanded && (
                       <tr>
-                        <td colSpan={7} style={{ padding: '0 14px 14px', background: 'var(--color-surface-muted, #f8fafc)' }}>
+                        <td colSpan={8} style={{ padding: '0 14px 14px', background: 'var(--color-surface-muted, #f8fafc)' }}>
                           <CertificateExtractionSection
                             sampleId={row.sampleId}
                             hasCompound={row.hasCompound}

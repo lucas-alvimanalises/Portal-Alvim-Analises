@@ -29,6 +29,7 @@ export class ListPendingCertificatesUseCase {
       },
       select: {
         id: true,
+        sampleCode: true,
         samplingPoint: { select: { name: true } },
         compound: { select: { code: true, name: true } },
         schedule: {
@@ -53,6 +54,7 @@ export class ListPendingCertificatesUseCase {
       samplingPointName: sample.samplingPoint?.name ?? '-',
       compoundLabel: sample.compound ? `${sample.compound.code} - ${sample.compound.name}` : '-',
       hasCompound: !!sample.compound,
+      sampleCode: sample.sampleCode,
       technicianNames: sample.schedule.technicians.map((t) => t.technician.name),
     }));
   }
