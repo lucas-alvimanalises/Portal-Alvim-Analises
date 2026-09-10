@@ -21,6 +21,22 @@ const SHEET_NAME = 'Operações '; // com espaço no fim, como está na planilha
 const HEADER_ROW = 4; // dados começam na linha 5
 const CUTOFF = new Date('2026-08-01T00:00:00Z'); // < agosto/2026 = legado
 
+// Nomes curtos internos da planilha -> razão social do Client cadastrado no
+// portal (confirmado com o usuário). Só as empresas que existem no portal
+// entram aqui; o resto (Essencis - Caieiras/Salvador, outras plantas da
+// Gás Verde, CRVR, Marquise, UVS, ... — clientes antigos nunca cadastrados)
+// fica com clientId nulo de propósito, aparecendo só pelo nome-texto.
+const LEGACY_CLIENT_NAME_MAP: Record<string, string> = {
+  'gás verde - seropédica rj': 'Gás Verde S/A',
+  'orizon- jaboatão dos guararapes': 'ORIZON BIOMETANO JABOATAO DOS GUARARAPES LIMITADA',
+  'essencis - minas do leão': 'BIOMETANO SUL S.A',
+  'biotérmica minas do leão': 'BIOMETANO SUL S.A',
+  bvp: 'BIOMETANO VERDE PAULÍNIA S.A.',
+  'metagás': 'METAGAS BIOGAS E ENERGIA S/A',
+  'gnr fortaleza': 'GNR FORTALEZA VALORIZAÇÃO DE BIOGÁS LTDA',
+  'biometano são leopoldo': 'Biometano São Leopoldo S.A.',
+};
+
 // Colunas (1 = coluna A):
 const COL = {
   date: 2,
@@ -145,7 +161,9 @@ async function main() {
     }
     if (reportNumber) seenReportInFile.add(reportNumber);
 
-    const clientId = clientIdByName.get(clientName.toLowerCase()) ?? null;
+    const mappedName = LEGACY_CLIENT_NAME_MAP[clientName.toLowerCase()];
+    const clientId =
+      clientIdByName.get((mappedName ?? clientName).toLowerCase()) ?? null;
     if (!clientId) unmatchedClients.set(clientName, (unmatchedClients.get(clientName) ?? 0) + 1);
 
     toInsert.push({
@@ -172,8 +190,11 @@ async function main() {
       .forEach(([name, count]) => console.log(`  ${count.toString().padStart(4)}×  ${name}`));
   }
 
+  const linkedCount = toInsert.filter((r) => r.clientId).length;
+
   console.log('\n--- Resumo ---');
   console.log(`  ${toInsert.length} linha(s) ${APPLY ? 'inseridas' : 'seriam inseridas'} (LEGACY_IMPORT)`);
+  console.log(`  ${linkedCount} com clientId vinculado, ${toInsert.length - linkedCount} só com nome-texto`);
   console.log(`  ${skippedAfterCutoff} puladas (Data do Serviço >= 2026-08-01, vêm do portal)`);
   console.log(`  ${skippedDupReport} puladas (nº de relatório já existente / repetido na planilha)`);
   console.log(`  ${skippedNoDate} puladas (sem data válida)`);
