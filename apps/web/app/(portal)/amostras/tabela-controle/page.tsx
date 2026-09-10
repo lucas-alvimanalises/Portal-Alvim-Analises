@@ -293,7 +293,12 @@ export default function TabelaControleAmostrasPage() {
               {records?.map((record, index) => (
                 <tr
                   key={record.id}
-                  style={{ borderTop: index === 0 ? 'none' : '1px solid var(--color-border)' }}
+                  // Zebra branca/cinza igual à planilha, pra diferenciar as
+                  // linhas de relance (usa surface-muted, que também funciona
+                  // no modo escuro).
+                  style={{
+                    background: index % 2 === 1 ? 'var(--color-surface-muted)' : 'transparent',
+                  }}
                 >
                   <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>{formatDate(record.serviceDate)}</td>
                   <td style={{ padding: '8px 12px' }}>{record.clientName}</td>
