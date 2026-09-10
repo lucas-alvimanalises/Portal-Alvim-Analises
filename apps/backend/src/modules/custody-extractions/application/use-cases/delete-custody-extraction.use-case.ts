@@ -14,6 +14,7 @@ import {
   CUSTODY_EXTRACTION_REPOSITORY,
   CustodyExtractionRepository,
 } from '../../domain/custody-extraction.repository';
+import { SamplingControlService } from '../../../sampling-control/sampling-control.service';
 
 // Permite refazer uma cadeia de custódia preenchida errada: apaga a
 // extração e, se ela já tinha sido aprovada (PDF gerado), apaga também o
@@ -29,6 +30,7 @@ export class DeleteCustodyExtractionUseCase {
     private readonly custodyDocumentRepository: CustodyDocumentRepository,
     @Inject(SAMPLE_REPOSITORY) private readonly sampleRepository: SampleRepository,
     @Inject(FILE_STORAGE_SERVICE) private readonly fileStorageService: FileStorageService,
+    private readonly samplingControlService: SamplingControlService,
   ) {}
 
   async execute(id: string, user: AuthenticatedUser) {
@@ -49,5 +51,8 @@ export class DeleteCustodyExtractionUseCase {
       const { storageKey } = await this.custodyDocumentRepository.delete(generatedDocumentId);
       await this.fileStorageService.delete(storageKey);
     }
+
+    // A amostragem deixa de existir no registro do portal (planilha mestre).
+    await this.samplingControlService.removeForCustodyExtraction(id);
   }
 }

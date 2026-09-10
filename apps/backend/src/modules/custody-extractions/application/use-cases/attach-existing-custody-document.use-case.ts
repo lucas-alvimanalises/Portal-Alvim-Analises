@@ -4,6 +4,7 @@ import { assertOwnership } from '../../../../common/utils/scope.util';
 import { fixMultipartFilename } from '../../../../common/utils/multipart-filename.util';
 import { SAMPLE_REPOSITORY, SampleRepository } from '../../../samples/domain/sample.repository';
 import { SampleCompletionService } from '../../../samples/application/sample-completion.service';
+import { SamplingControlService } from '../../../sampling-control/sampling-control.service';
 import {
   FILE_STORAGE_SERVICE,
   FileStorageService,
@@ -39,6 +40,7 @@ export class AttachExistingCustodyDocumentUseCase {
     @Inject(FILE_STORAGE_SERVICE) private readonly fileStorageService: FileStorageService,
     private readonly custodyFieldTemplatesService: CustodyFieldTemplatesService,
     private readonly sampleCompletionService: SampleCompletionService,
+    private readonly samplingControlService: SamplingControlService,
   ) {}
 
   async execute(sampleId: string, file: Express.Multer.File, user: AuthenticatedUser) {
@@ -121,6 +123,9 @@ export class AttachExistingCustodyDocumentUseCase {
     });
 
     await this.sampleCompletionService.maybeComplete(sampleId);
+
+    // Alimenta a "Tabela de Controle de Amostras" (planilha mestre).
+    await this.samplingControlService.syncFromCustodyExtraction(extraction.id);
 
     return approved;
   }

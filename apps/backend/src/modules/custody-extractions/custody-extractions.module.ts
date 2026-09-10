@@ -3,6 +3,7 @@ import { SamplesModule } from '../samples/samples.module';
 import { AttachmentsModule } from '../attachments/attachments.module';
 import { CustodyDocumentsModule } from '../custody-documents/custody-documents.module';
 import { UsersModule } from '../users/users.module';
+import { SamplingControlModule } from '../sampling-control/sampling-control.module';
 import { CUSTODY_EXTRACTION_REPOSITORY } from './domain/custody-extraction.repository';
 import { PrismaCustodyExtractionRepository } from './infrastructure/prisma-custody-extraction.repository';
 import { CustodyFieldTemplatesService } from './infrastructure/custody-field-templates.service';
@@ -22,7 +23,7 @@ import { DownloadCustodyDocumentBySampleUseCase } from './application/use-cases/
 import { DownloadBlankCustodyChainsUseCase } from './application/use-cases/download-blank-custody-chains.use-case';
 
 @Module({
-  imports: [SamplesModule, AttachmentsModule, CustodyDocumentsModule, UsersModule],
+  imports: [SamplesModule, AttachmentsModule, CustodyDocumentsModule, UsersModule, SamplingControlModule],
   controllers: [CustodyExtractionsController],
   providers: [
     { provide: CUSTODY_EXTRACTION_REPOSITORY, useClass: PrismaCustodyExtractionRepository },

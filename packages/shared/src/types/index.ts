@@ -24,3 +24,4 @@ export * from './field-report.types';
 export * from './service-results-summary.types';
 export * from './tracking-shipment.types';
 export * from './notification.types';
+export * from './sampling-control.types';

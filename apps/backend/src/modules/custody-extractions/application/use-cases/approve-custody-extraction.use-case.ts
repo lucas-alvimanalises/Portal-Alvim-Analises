@@ -16,6 +16,7 @@ import {
   CustodyExtractionRepository,
 } from '../../domain/custody-extraction.repository';
 import { USER_REPOSITORY, UserRepository } from '../../../users/domain/user.repository';
+import { SamplingControlService } from '../../../sampling-control/sampling-control.service';
 import { CustodyFieldTemplatesService } from '../../infrastructure/custody-field-templates.service';
 import { buildCustodyDocumentPdfBuffer, CustodyDocumentPhoto } from '../custody-extraction-pdf.util';
 
@@ -70,6 +71,7 @@ export class ApproveCustodyExtractionUseCase {
     @Inject(USER_REPOSITORY) private readonly userRepository: UserRepository,
     private readonly custodyFieldTemplatesService: CustodyFieldTemplatesService,
     private readonly sampleCompletionService: SampleCompletionService,
+    private readonly samplingControlService: SamplingControlService,
   ) {}
 
   async execute(id: string, user: AuthenticatedUser) {
@@ -250,6 +252,10 @@ export class ApproveCustodyExtractionUseCase {
     });
 
     await this.sampleCompletionService.maybeComplete(sample.id);
+
+    // Alimenta a "Tabela de Controle de Amostras" (planilha mestre) —
+    // amostragem concluída no portal vira uma linha lá.
+    await this.samplingControlService.syncFromCustodyExtraction(id);
 
     return approved;
   }

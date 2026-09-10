@@ -55,14 +55,14 @@ enum MaintenanceNature {
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String  @unique
   passwordHash String
   phone        String?
   jobTitle     String?
   role         Role
-  active       Boolean  @default(true)
+  active       Boolean @default(true)
 
   // Preferência de receber notificações por e-mail (ex.: PDF de Ordem de
   // Serviço enviado ao cliente). Relevante sobretudo para role = CLIENT.
@@ -71,26 +71,26 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  refreshTokens         RefreshToken[]
-  passwordResetTokens   PasswordResetToken[]
-  schedulesAsTechnician ScheduleTechnician[] @relation("TechnicianSchedules")
-  uploadedAttachments   Attachment[]
-  notifications         Notification[]
-  samplesResponsible    Sample[]       @relation("SampleResponsible")
-  certificatesResponsible Certificate[] @relation("CertificateResponsible")
-  custodyDocumentsUploaded CustodyDocument[] @relation("CustodyDocumentUploader")
-  custodyExtractionsApproved CustodyExtraction[] @relation("CustodyExtractionApprover")
-  certificateExtractionsApproved CertificateExtraction[] @relation("CertificateExtractionApprover")
-  calendarNotes CalendarNote[] @relation("CalendarNoteTechnician")
-  printedLabels PrintedLabel[]
-  serviceChecklistsFilled ServiceChecklist[]
-  plantMaintenancesCreated PlantMaintenance[]
-  anpMonthlyReportsGenerated AnpMonthlyReport[]
-  localTipsCreated ClientLocalTip[]
-  anpRegulatoryLimitsUpdated AnpRegulatoryLimit[]
-  fieldReportsGenerated      FieldReport[]
+  refreshTokens                    RefreshToken[]
+  passwordResetTokens              PasswordResetToken[]
+  schedulesAsTechnician            ScheduleTechnician[]    @relation("TechnicianSchedules")
+  uploadedAttachments              Attachment[]
+  notifications                    Notification[]
+  samplesResponsible               Sample[]                @relation("SampleResponsible")
+  certificatesResponsible          Certificate[]           @relation("CertificateResponsible")
+  custodyDocumentsUploaded         CustodyDocument[]       @relation("CustodyDocumentUploader")
+  custodyExtractionsApproved       CustodyExtraction[]     @relation("CustodyExtractionApprover")
+  certificateExtractionsApproved   CertificateExtraction[] @relation("CertificateExtractionApprover")
+  calendarNotes                    CalendarNote[]          @relation("CalendarNoteTechnician")
+  printedLabels                    PrintedLabel[]
+  serviceChecklistsFilled          ServiceChecklist[]
+  plantMaintenancesCreated         PlantMaintenance[]
+  anpMonthlyReportsGenerated       AnpMonthlyReport[]
+  localTipsCreated                 ClientLocalTip[]
+  anpRegulatoryLimitsUpdated       AnpRegulatoryLimit[]
+  fieldReportsGenerated            FieldReport[]
   serviceResultsSummariesGenerated ServiceResultsSummary[]
-  trackingShipmentsCreated   TrackingShipment[] @relation("TrackingShipmentCreator")
+  trackingShipmentsCreated         TrackingShipment[]      @relation("TrackingShipmentCreator")
 
   // Só populado quando role = CLIENT: um usuário-cliente (pessoa) pode ter
   // acesso a várias empresas (N:N) — ele escolhe qual visualizar por vez no
@@ -156,14 +156,15 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contracts      Contract[]
-  schedules      Schedule[]
-  samples        Sample[]
-  userLinks      ClientUser[]
-  samplingPoints SamplingPoint[]
-  plantMaintenances PlantMaintenance[]
-  anpMonthlyReports AnpMonthlyReport[]
-  localTips         ClientLocalTip[]
+  contracts              Contract[]
+  schedules              Schedule[]
+  samples                Sample[]
+  userLinks              ClientUser[]
+  samplingPoints         SamplingPoint[]
+  plantMaintenances      PlantMaintenance[]
+  anpMonthlyReports      AnpMonthlyReport[]
+  localTips              ClientLocalTip[]
+  samplingControlRecords SamplingControlRecord[]
 
   @@map("clients")
 }
@@ -185,7 +186,7 @@ model PlantMaintenance {
   client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   // Dia da manutenção (meia-noite UTC, mesmo padrão de Schedule.scheduledDate).
-  date DateTime
+  date      DateTime
   // "HH:mm" — texto simples, sem precedente de campo de hora isolado no
   // schema hoje; não precisa de mais que isso pra exibição/registro.
   startTime String?
@@ -243,7 +244,7 @@ model ClientLocalTip {
   // Link do Google Maps do lugar — mesmo campo/uso do Client.mapsUrl, ver
   // navigation-links.ts no app mobile (botão "Como chegar").
   mapsUrl  String?
-  notes    String? @db.Text
+  notes    String?          @db.Text
 
   createdById String
   createdBy   User   @relation(fields: [createdById], references: [id])
@@ -287,8 +288,8 @@ model SamplingPoint {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  schedules ScheduleSamplingPoint[]
-  samples   Sample[]
+  schedules     ScheduleSamplingPoint[]
+  samples       Sample[]
   printedLabels PrintedLabel[]
 
   @@index([clientId])
@@ -334,10 +335,10 @@ model Contract {
 
 // Lookup extensível: novos tipos de serviço são um registro novo, não uma migration.
 model ServiceType {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String?
-  active      Boolean @default(true)
+  id                  String  @id @default(uuid())
+  name                String  @unique
+  description         String?
+  active              Boolean @default(true)
   // Se false, amostras desse tipo de serviço ficam "Concluídas" sem precisar
   // de certificado anexado (cadeia de custódia continua exigida normalmente,
   // por composto — ver CustodyFieldTemplate.custodyRequired). Usado pra
@@ -407,14 +408,14 @@ model Schedule {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  execution      ServiceExecution?
-  samplingPoints ScheduleSamplingPoint[]
-  samples        Sample[]
+  execution        ServiceExecution?
+  samplingPoints   ScheduleSamplingPoint[]
+  samples          Sample[]
   // Um serviço pode precisar de mais de um técnico em campo (N:N).
-  technicians    ScheduleTechnician[]
-  printedLabels  PrintedLabel[]
-  checklist      ServiceChecklist?
-  fieldReport    FieldReport?
+  technicians      ScheduleTechnician[]
+  printedLabels    PrintedLabel[]
+  checklist        ServiceChecklist?
+  fieldReport      FieldReport?
   resultsSummaries ServiceResultsSummary[]
 
   @@index([clientId])
@@ -471,7 +472,7 @@ model ServiceChecklist {
   quantities Json
 
   filledById String
-  filledBy   User   @relation(fields: [filledById], references: [id])
+  filledBy   User     @relation(fields: [filledById], references: [id])
   filledAt   DateTime @default(now())
 
   updatedAt DateTime @updatedAt
@@ -494,13 +495,13 @@ model Compound {
   // sem nenhum fluxo usando este campo, só cadastro.
   samplerType String?
 
-  schedulePoints ScheduleSamplingPointCompound[]
-  samples        Sample[]
-  custodyDocuments CustodyDocument[]
-  custodyFieldTemplate CustodyFieldTemplate?
+  schedulePoints             ScheduleSamplingPointCompound[]
+  samples                    Sample[]
+  custodyDocuments           CustodyDocument[]
+  custodyFieldTemplate       CustodyFieldTemplate?
   certificateAnalyteTemplate CertificateAnalyteTemplate?
-  printedLabels PrintedLabel[]
-  labelSequence LabelSequence?
+  printedLabels              PrintedLabel[]
+  labelSequence              LabelSequence?
 
   @@map("compounds")
 }
@@ -580,7 +581,7 @@ model PrintedLabel {
   number Int
 
   printedById String
-  printedBy   User @relation(fields: [printedById], references: [id])
+  printedBy   User   @relation(fields: [printedById], references: [id])
 
   createdAt DateTime @default(now())
 
@@ -602,9 +603,9 @@ model LabelSequence {
 
 // Fase 1: schema + migration criados, mas sem controller/rota exposta (módulo stub).
 model ServiceExecution {
-  id            String    @id @default(uuid())
-  scheduleId    String    @unique
-  schedule      Schedule  @relation(fields: [scheduleId], references: [id])
+  id            String   @id @default(uuid())
+  scheduleId    String   @unique
+  schedule      Schedule @relation(fields: [scheduleId], references: [id])
   executionDate DateTime
   technicianId  String
   notes         String?
@@ -654,7 +655,7 @@ model Sample {
 
   // Código/número da amostra usado internamente pelo laboratório (opcional,
   // nem toda amostra tem um).
-  sampleCode String?
+  sampleCode     String?
   // Andamento da análise em si — independente de já existir um certificado
   // anexado ou não.
   analysisStatus AnalysisStatus @default(PENDING)
@@ -662,10 +663,10 @@ model Sample {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  certificates       Certificate[]
-  resultRows         SampleResultRow[]
-  custodyDocuments   CustodyDocument[]
-  custodyExtractions CustodyExtraction[]
+  certificates           Certificate[]
+  resultRows             SampleResultRow[]
+  custodyDocuments       CustodyDocument[]
+  custodyExtractions     CustodyExtraction[]
   certificateExtractions CertificateExtraction[]
 
   @@index([clientId])
@@ -705,13 +706,13 @@ model SampleResultRow {
   parameterName String
   // Texto livre — preserva notação de laudo como "< 0,01" sem tentar virar
   // número, evitando perda de precisão/formato do resultado original.
-  result     String
-  unit       String
-  specLimit  String?
-  compliance ComplianceStatus?
-  notes      String?
+  result        String
+  unit          String
+  specLimit     String?
+  compliance    ComplianceStatus?
+  notes         String?
   // Ordem de exibição estável dentro da análise.
-  order Int @default(0)
+  order         Int               @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -732,8 +733,8 @@ model Certificate {
   laboratory        String
   // Data em que o laboratório efetivamente analisou a amostra — diferente de
   // issueDate (data de emissão do documento do certificado).
-  analysisDate DateTime
-  issueDate    DateTime
+  analysisDate      DateTime
+  issueDate         DateTime
 
   fileId String     @unique
   file   Attachment @relation(fields: [fileId], references: [id])
@@ -816,7 +817,7 @@ model CertificateExtraction {
   originalScanFileId String     @unique
   originalScanFile   Attachment @relation(fields: [originalScanFileId], references: [id])
 
-  status CertificateExtractionStatus @default(PROCESSING)
+  status        CertificateExtractionStatus @default(PROCESSING)
   // { certificateNumber, certificateNumberConfidence, analysisDate,
   //   analysisDateConfidence, results: [{ key, parameterName, result, unit, confidence }] }
   extractedData Json?
@@ -925,7 +926,7 @@ model CustodyExtraction {
   selectedPhotoId String?
   selectedPhoto   Attachment? @relation("CustodyExtractionSelectedPhoto", fields: [selectedPhotoId], references: [id])
 
-  status CustodyExtractionStatus @default(PROCESSING)
+  status        CustodyExtractionStatus @default(PROCESSING)
   // { fields: { [key]: { value, confidence } }, table: { [column]: { [row]: { value, confidence } } } }
   extractedData Json?
   // Mesma forma de extractedData, só que com as correções do técnico — null
@@ -967,15 +968,15 @@ model Attachment {
   plantMaintenanceId String?
   plantMaintenance   PlantMaintenance? @relation(fields: [plantMaintenanceId], references: [id])
 
-  certificate Certificate?
-  custodyDocument CustodyDocument?
-  anpMonthlyReport AnpMonthlyReport?
-  fieldReport FieldReport?
-  serviceResultsSummary ServiceResultsSummary?
-  custodyExtractionScan CustodyExtraction?
-  custodyExtractionSelectedIn CustodyExtraction[] @relation("CustodyExtractionSelectedPhoto")
-  signatureOfUser User? @relation("UserSignature")
-  certificateExtractionScan CertificateExtraction?
+  certificate                 Certificate?
+  custodyDocument             CustodyDocument?
+  anpMonthlyReport            AnpMonthlyReport?
+  fieldReport                 FieldReport?
+  serviceResultsSummary       ServiceResultsSummary?
+  custodyExtractionScan       CustodyExtraction?
+  custodyExtractionSelectedIn CustodyExtraction[]    @relation("CustodyExtractionSelectedPhoto")
+  signatureOfUser             User?                  @relation("UserSignature")
+  certificateExtractionScan   CertificateExtraction?
 
   createdAt DateTime @default(now())
 
@@ -1051,7 +1052,7 @@ model AnpMonthlyReport {
   sourceDataHash String
 
   generatedById String
-  generatedBy   User   @relation(fields: [generatedById], references: [id])
+  generatedBy   User     @relation(fields: [generatedById], references: [id])
   createdAt     DateTime @default(now())
 
   @@unique([clientId, year, month, version])
@@ -1137,4 +1138,72 @@ model TrackingShipment {
 
   @@index([status])
   @@map("tracking_shipments")
+}
+
+enum SamplingControlSource {
+  // Linha importada uma única vez da planilha mestre da Alvim
+  // ("Identificação de Amostragens.xlsx"), amostragens até jul/2026 — ver
+  // scripts/import-sampling-control-legacy.ts.
+  LEGACY_IMPORT
+  // Linha gravada pelo portal na aprovação da cadeia de custódia (ago/2026
+  // em diante) — ver SamplingControlService.
+  PORTAL
+}
+
+// "Tabela de Controle de Amostras" — a planilha mestre da Alvim
+// ("Identificação de Amostragens.xlsx"), uma linha por amostragem concluída
+// desde jan/2024. É uma tabela persistida (não uma projeção calculada na
+// hora) porque reúne dois mundos: (1) o histórico pré-portal, importado uma
+// vez da planilha (source LEGACY_IMPORT), e (2) as amostragens feitas 100%
+// no portal a partir de ago/2026, gravadas na aprovação da cadeia de
+// custódia (source PORTAL). As colunas 1–8 saem de dados que o portal já
+// tem (Sample + cadeia); "Responsável pelo Faturamento" é manual, editável
+// na tela, e a sincronização com a cadeia nunca a sobrescreve.
+model SamplingControlRecord {
+  id String @id @default(uuid())
+
+  // Data do Serviço (meia-noite UTC, mesmo padrão de Sample.collectionDate).
+  serviceDate          DateTime
+  // Cliente como texto: os nomes da planilha legada ("Orizon- Paulinia")
+  // nem sempre casam com um Client cadastrado. clientId é preenchido quando
+  // a origem é o portal (ou quando o import casou por nome).
+  clientName           String
+  clientId             String?
+  client               Client?  @relation(fields: [clientId], references: [id])
+  // Amostragem — nome do composto (Siloxanos, VOCs, ...).
+  compoundName         String
+  // Identificação da amostra: nºs dos impingers de Siloxanos concatenados
+  // ("1005098 - 1005099 - 1005100") ou o identificador físico dos demais
+  // compostos (tubo/cassete). É o Sample.sampleCode nas linhas do portal.
+  sampleIdentification String?
+  // N° Relatório Interno ("11000/24") — sequência do composto+ano gerada na
+  // aprovação da cadeia (ver computeNextReportNumber). Chave de deduplicação
+  // entre o import legado e o portal: portal sempre ganha.
+  fieldReportNumber    String?
+  // Bomba utilizada — texto livre (na planilha vinha inconsistente: "NE 2761"
+  // vs "NE2761"); no portal vem do campo `bombaAmostragemN` da cadeia.
+  pump                 String?
+  // Ponto de amostragem (Sample.samplingPoint.name no portal).
+  samplingPointName    String?
+  // Observação (Sample.notes no portal).
+  observation          String?  @db.Text
+  // Responsável pelo Faturamento — MANUAL, digitado na tela; a sincronização
+  // com a cadeia nunca preenche nem sobrescreve este campo.
+  billingResponsible   String?  @db.Text
+
+  source SamplingControlSource
+
+  // Preenchidos só nas linhas de origem portal — ligam de volta e servem de
+  // chave de idempotência (upsert por custodyExtractionId a cada aprovação/
+  // regeração da cadeia).
+  custodyExtractionId String? @unique
+  sampleId            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceDate])
+  @@index([fieldReportNumber])
+  @@index([clientId])
+  @@map("sampling_control_records")
 }
