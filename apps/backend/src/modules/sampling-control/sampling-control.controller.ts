@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { Role, SamplingControlSource } from '@portal-alvim/shared';
+import { ListSamplingControlParams, Role, SamplingControlSource } from '@portal-alvim/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { SamplingControlService } from './sampling-control.service';
@@ -21,23 +21,10 @@ export class SamplingControlController {
   // Rota estática antes de qualquer ":id" (não há GET /:id hoje, mas mantém
   // o padrão dos outros controllers).
   @Get('export')
-  async exportExcel(
-    @Res() res: Response,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('clientId') clientId?: string,
-    @Query('compoundName') compoundName?: string,
-    @Query('source') source?: SamplingControlSource,
-    @Query('search') search?: string,
-  ) {
-    const { buffer, filename } = await this.samplingControlExcelService.export({
-      startDate,
-      endDate,
-      clientId,
-      compoundName,
-      source,
-      search,
-    });
+  async exportExcel(@Res() res: Response, @Query() query: Record<string, string | undefined>) {
+    const { buffer, filename } = await this.samplingControlExcelService.export(
+      this.parseFilters(query),
+    );
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
@@ -46,22 +33,24 @@ export class SamplingControlController {
   }
 
   @Get()
-  list(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('clientId') clientId?: string,
-    @Query('compoundName') compoundName?: string,
-    @Query('source') source?: SamplingControlSource,
-    @Query('search') search?: string,
-  ) {
-    return this.samplingControlService.list({
-      startDate,
-      endDate,
-      clientId,
-      compoundName,
-      source,
-      search,
-    });
+  list() {
+    return this.samplingControlService.list();
+  }
+
+  private parseFilters(query: Record<string, string | undefined>): ListSamplingControlParams {
+    return {
+      startDate: query.startDate,
+      endDate: query.endDate,
+      source: query.source as SamplingControlSource | undefined,
+      clientName: query.clientName,
+      compoundName: query.compoundName,
+      sampleIdentification: query.sampleIdentification,
+      fieldReportNumber: query.fieldReportNumber,
+      pump: query.pump,
+      samplingPointName: query.samplingPointName,
+      observation: query.observation,
+      billingResponsible: query.billingResponsible,
+    };
   }
 
   @Patch(':id')

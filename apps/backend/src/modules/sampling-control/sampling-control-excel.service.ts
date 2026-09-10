@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import ExcelJS from 'exceljs';
 import {
   ListSamplingControlParams,
+  matchesSamplingControlFilters,
   SAMPLING_CONTROL_SOURCE_LABELS_PT,
   SamplingControlSource,
 } from '@portal-alvim/shared';
@@ -38,7 +39,8 @@ export class SamplingControlExcelService {
   constructor(private readonly samplingControlService: SamplingControlService) {}
 
   async export(params: ListSamplingControlParams): Promise<ExportedFile> {
-    const records = await this.samplingControlService.list(params);
+    const all = await this.samplingControlService.list();
+    const records = all.filter((record) => matchesSamplingControlFilters(record, params));
 
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'Alvim Análises';

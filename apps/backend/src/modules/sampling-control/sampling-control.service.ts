@@ -1,8 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import {
   CustodyExtractedData,
-  ListSamplingControlParams,
   SamplingControlRecordDto,
   UpdateSamplingControlRecordPayload,
 } from '@portal-alvim/shared';
@@ -37,32 +35,13 @@ function reportNumberFromFilename(filename: string): string | null {
 export class SamplingControlService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(params: ListSamplingControlParams): Promise<SamplingControlRecordDto[]> {
-    const where: Prisma.SamplingControlRecordWhereInput = {};
-
-    if (params.startDate || params.endDate) {
-      const range: Prisma.DateTimeFilter = {};
-      if (params.startDate) range.gte = new Date(`${params.startDate}T00:00:00Z`);
-      if (params.endDate) range.lte = new Date(`${params.endDate}T23:59:59Z`);
-      where.serviceDate = range;
-    }
-    if (params.clientId) where.clientId = params.clientId;
-    if (params.compoundName) where.compoundName = params.compoundName;
-    if (params.source) where.source = params.source;
-    if (params.search?.trim()) {
-      const search = params.search.trim();
-      where.OR = [
-        { clientName: { contains: search, mode: 'insensitive' } },
-        { fieldReportNumber: { contains: search, mode: 'insensitive' } },
-        { sampleIdentification: { contains: search, mode: 'insensitive' } },
-        { samplingPointName: { contains: search, mode: 'insensitive' } },
-        { pump: { contains: search, mode: 'insensitive' } },
-        { billingResponsible: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
+  // Devolve a tabela inteira, ordenada. Os filtros (período, origem, colunas)
+  // são aplicados no cliente e no export (ver matchesSamplingControlFilters
+  // em @portal-alvim/shared) — a base tem ~2 mil linhas e cresce devagar, não
+  // compensa paginar/filtrar no SQL ainda. Se um dia passar de ~20 mil,
+  // reavaliar (adicionar paginação).
+  async list(): Promise<SamplingControlRecordDto[]> {
     const rows = await this.prisma.samplingControlRecord.findMany({
-      where,
       // Mesma ordem da planilha: mais recente primeiro, e dentro do mesmo
       // dia agrupado por nº de relatório (a sequência do composto).
       orderBy: [{ serviceDate: 'desc' }, { fieldReportNumber: 'asc' }, { createdAt: 'asc' }],

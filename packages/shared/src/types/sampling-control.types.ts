@@ -23,13 +23,21 @@ export interface SamplingControlRecordDto {
   updatedAt: string;
 }
 
+// Filtros da tabela: período (De/Até) e origem são "globais"; os demais são
+// por coluna (substring, sem diferenciar maiúsculas/acentos no lado do
+// cliente da busca). Todos são aplicados também no export em Excel.
 export interface ListSamplingControlParams {
   startDate?: string;
   endDate?: string;
-  clientId?: string;
-  compoundName?: string;
   source?: SamplingControlSource;
-  search?: string;
+  clientName?: string;
+  compoundName?: string;
+  sampleIdentification?: string;
+  fieldReportNumber?: string;
+  pump?: string;
+  samplingPointName?: string;
+  observation?: string;
+  billingResponsible?: string;
 }
 
 // Só o campo manual é editável pela tela — data/cliente/composto/etc. são
