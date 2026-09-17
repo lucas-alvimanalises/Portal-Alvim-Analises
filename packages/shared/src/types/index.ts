@@ -26,3 +26,4 @@ export * from './service-results-summary.types';
 export * from './tracking-shipment.types';
 export * from './notification.types';
 export * from './sampling-control.types';
+export * from './shared-document.types';

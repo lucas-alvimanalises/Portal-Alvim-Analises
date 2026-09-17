@@ -33,6 +33,7 @@ import { ServiceResultsSummaryModule } from './modules/service-results-summary/s
 import { TrackingShipmentsModule } from './modules/tracking-shipments/tracking-shipments.module';
 import { LocalTipsModule } from './modules/local-tips/local-tips.module';
 import { SamplingControlModule } from './modules/sampling-control/sampling-control.module';
+import { SharedDocumentsModule } from './modules/shared-documents/shared-documents.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { SamplingControlModule } from './modules/sampling-control/sampling-contr
     TrackingShipmentsModule,
     LocalTipsModule,
     SamplingControlModule,
+    SharedDocumentsModule,
   ],
   providers: [
     // Guard global: exige JWT válido em toda rota, exceto as marcadas @Public().

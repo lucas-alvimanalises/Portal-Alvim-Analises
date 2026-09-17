@@ -41,6 +41,14 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { label: 'Usuários', href: '/usuarios', roles: [Role.ADMIN] },
   { label: 'Empresas', href: '/empresas', roles: [Role.ADMIN, Role.MANAGER, Role.TECHNICIAN] },
+  // Pasta de arquivos por empresa, compartilhada entre Alvim e o cliente
+  // (pedido do usuário). Sem TECHNICIAN (confirmado com o usuário: só
+  // ADMIN/MANAGER do lado Alvim).
+  {
+    label: 'Documentos Compartilhados',
+    href: '/documentos-compartilhados',
+    roles: [Role.ADMIN, Role.MANAGER, Role.CLIENT],
+  },
   // Cliente ainda não vê Contratos: tela em construção (confirmado com o
   // usuário) — volta a ficar visível pra CLIENT quando a funcionalidade for
   // concluída. Técnico também não vê Contratos (exceção explícita do

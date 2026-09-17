@@ -34,6 +34,7 @@ enum AttachmentKind {
   CERTIFICATE_PDF
   CUSTODY_DOCUMENT
   SIGNATURE
+  SHARED_DOCUMENT
 }
 
 enum MaintenanceStatus {
@@ -165,6 +166,7 @@ model Client {
   anpMonthlyReports      AnpMonthlyReport[]
   localTips              ClientLocalTip[]
   samplingControlRecords SamplingControlRecord[]
+  sharedDocuments        Attachment[]             @relation("SharedDocumentClient")
 
   @@map("clients")
 }
@@ -1014,6 +1016,13 @@ model Attachment {
   serviceChecklistId String?
   serviceChecklist   ServiceChecklist? @relation(fields: [serviceChecklistId], references: [id], onDelete: Cascade)
 
+  // "Documentos Compartilhados" — pasta por empresa onde ADMIN/MANAGER e o
+  // próprio CLIENT sobem arquivos (ver SharedDocumentsService). kind =
+  // SHARED_DOCUMENT identifica essas linhas; as demais features usam sua
+  // própria FK nullable já existente aqui, mesmo padrão.
+  sharedDocumentClientId String?
+  sharedDocumentClient   Client? @relation("SharedDocumentClient", fields: [sharedDocumentClientId], references: [id], onDelete: Cascade)
+
   certificate                 Certificate?
   custodyDocument             CustodyDocument?
   anpMonthlyReport            AnpMonthlyReport?
@@ -1026,6 +1035,7 @@ model Attachment {
 
   createdAt DateTime @default(now())
 
+  @@index([sharedDocumentClientId])
   @@map("attachments")
 }
 
