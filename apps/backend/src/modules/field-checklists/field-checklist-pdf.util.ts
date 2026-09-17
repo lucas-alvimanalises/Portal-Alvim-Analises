@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FIELD_CHECKLIST_SECTIONS } from '@portal-alvim/shared';
+import { ChecklistSectionDto } from '@portal-alvim/shared';
 import { getLogoBase64 } from '../../common/utils/pdf-logo.util';
 
 type DocWithAutoTable = jsPDF & { lastAutoTable?: { finalY?: number } };
@@ -21,13 +21,13 @@ function formatDate(dateOnly: string): string {
 // possível em altura (cada seção vai pra coluna mais curta no momento) —
 // evita uma coluna gigante que estoura pra a página 2 sem necessidade. O
 // "peso" de cada seção é o nº de itens + 1 (linha de cabeçalho).
-function balanceSectionsIntoColumns(): (typeof FIELD_CHECKLIST_SECTIONS)[number][][] {
-  const columns: (typeof FIELD_CHECKLIST_SECTIONS)[number][][] = [[], []];
+function balanceSectionsIntoColumns(sections: ChecklistSectionDto[]): ChecklistSectionDto[][] {
+  const columns: ChecklistSectionDto[][] = [[], []];
   const rowCount = [0, 0];
   // Maiores primeiro: colocar a maior seção sozinha e ir preenchendo com as
   // menores equilibra bem melhor do que a ordem natural (senão a última
   // seção grande, "Material Auxiliar", desbalanceia tudo).
-  const sorted = [...FIELD_CHECKLIST_SECTIONS].sort((a, b) => b.items.length - a.items.length);
+  const sorted = [...sections].sort((a, b) => b.items.length - a.items.length);
   for (const section of sorted) {
     const col = rowCount[0] <= rowCount[1] ? 0 : 1;
     columns[col].push(section);
@@ -39,11 +39,15 @@ function balanceSectionsIntoColumns(): (typeof FIELD_CHECKLIST_SECTIONS)[number]
 // Check List de Material de Campo em branco, no modelo Alvim — pra o
 // colaborador que prefere preencher no papel imprimir, marcar as
 // quantidades à mão e depois anexar a foto/PDF de volta no portal (ver
-// FieldChecklistsService). Conteúdo vem de FIELD_CHECKLIST_SECTIONS, a mesma
-// fonte da tela — nunca sai do sincronismo. Layout apertado de propósito
-// pra caber tudo numa folha A4; só vai pra página 2 se o total de itens
-// crescer a ponto de não caber mesmo (o jsPDF-autotable pagina sozinho).
-export function buildBlankFieldChecklistPdf(header: FieldChecklistPdfHeader): Buffer {
+// FieldChecklistsService). `sections` vem do catálogo em banco (ver
+// ChecklistCatalogService.listSections), a mesma fonte da tela — nunca sai
+// do sincronismo. Layout apertado de propósito pra caber tudo numa folha
+// A4; só vai pra página 2 se o total de itens crescer a ponto de não caber
+// mesmo (o jsPDF-autotable pagina sozinho).
+export function buildBlankFieldChecklistPdf(
+  header: FieldChecklistPdfHeader,
+  sections: ChecklistSectionDto[],
+): Buffer {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -70,10 +74,10 @@ export function buildBlankFieldChecklistPdf(header: FieldChecklistPdfHeader): Bu
   const colWidth = (pageWidth - marginX * 2 - gap) / 2;
   const columnX = [marginX, marginX + colWidth + gap];
   const columnTops = [y, y];
-  const columns = balanceSectionsIntoColumns();
+  const columns = balanceSectionsIntoColumns(sections);
 
-  columns.forEach((sections, col) => {
-    for (const section of sections) {
+  columns.forEach((columnSections, col) => {
+    for (const section of columnSections) {
       autoTable(doc, {
         startY: columnTops[col],
         margin: { left: columnX[col], right: pageWidth - columnX[col] - colWidth },

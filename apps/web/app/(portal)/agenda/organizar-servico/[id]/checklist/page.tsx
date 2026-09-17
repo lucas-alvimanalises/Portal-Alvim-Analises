@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FIELD_CHECKLIST_SECTIONS } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../../../lib/api/schedules.api';
 import { fieldChecklistsApi } from '../../../../../../lib/api/field-checklists.api';
 import { TableSkeleton } from '../../../../../../components/shared/Skeleton';
@@ -14,25 +13,32 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Check list de material de campo — conteúdo fixo adaptado do "CheckList
-// Alvim Análises.xlsx" (ver FIELD_CHECKLIST_SECTIONS). Cada item tem uma
-// quantidade (ex.: "9 Impingers"), não só marcado/desmarcado — 0 ou vazio
-// significa "não levou". Um por agendamento; salvar de novo sobrescreve.
-// Quem prefere papel imprime o modelo em branco, preenche à mão e anexa a
-// foto/PDF na seção "Checklist preenchido (papel)" — os dois caminhos
-// coexistem.
+// Check list de material de campo — catálogo de seções/itens vem do banco
+// (editável aqui mesmo, botão "+ Adicionar item" — ver ChecklistCatalogService),
+// não é mais fixo no código. Cada item tem uma quantidade (ex.: "9
+// Impingers"), não só marcado/desmarcado — 0 ou vazio significa "não levou".
+// Um por agendamento; salvar de novo sobrescreve. Quem prefere papel imprime
+// o modelo em branco, preenche à mão e anexa a foto/PDF na seção "Checklist
+// preenchido (papel)" — os dois caminhos coexistem.
 export default function ChecklistCampoPage() {
   const params = useParams<{ id: string }>();
   const scheduleId = params.id;
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [addingToSectionId, setAddingToSectionId] = useState<string | null>(null);
+  const [newItemLabel, setNewItemLabel] = useState('');
 
   const { data: schedule } = useQuery({
     queryKey: ['schedules', scheduleId],
     queryFn: () => schedulesApi.get(scheduleId),
   });
 
-  const { data: checklist, isLoading } = useQuery({
+  const { data: sections, isLoading: isLoadingSections } = useQuery({
+    queryKey: ['checklist-sections'],
+    queryFn: fieldChecklistsApi.listSections,
+  });
+
+  const { data: checklist, isLoading: isLoadingChecklist } = useQuery({
     queryKey: ['field-checklist', scheduleId],
     queryFn: () => fieldChecklistsApi.get(scheduleId),
   });
@@ -67,6 +73,15 @@ export default function ChecklistCampoPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['field-checklist', scheduleId] }),
   });
 
+  const createItemMutation = useMutation({
+    mutationFn: (sectionId: string) => fieldChecklistsApi.createItem(sectionId, { label: newItemLabel }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['checklist-sections'] });
+      setAddingToSectionId(null);
+      setNewItemLabel('');
+    },
+  });
+
   function setQuantity(key: string, value: string) {
     const parsed = value === '' ? 0 : Math.max(0, Math.floor(Number(value)));
     setQuantities((current) => ({ ...current, [key]: Number.isFinite(parsed) ? parsed : 0 }));
@@ -79,7 +94,13 @@ export default function ChecklistCampoPage() {
     }
   }
 
-  const totalItems = FIELD_CHECKLIST_SECTIONS.reduce((sum, section) => sum + section.items.length, 0);
+  function submitNewItem(sectionId: string) {
+    if (!newItemLabel.trim()) return;
+    createItemMutation.mutate(sectionId);
+  }
+
+  const isLoading = isLoadingSections || isLoadingChecklist;
+  const totalItems = sections?.reduce((sum, section) => sum + section.items.length, 0) ?? 0;
   const filledCount = Object.values(quantities).filter((q) => q > 0).length;
   const attachments = checklist?.attachments ?? [];
 
@@ -118,13 +139,13 @@ export default function ChecklistCampoPage() {
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-            {FIELD_CHECKLIST_SECTIONS.map((section) => (
-              <div key={section.key} className="card">
+            {sections?.map((section) => (
+              <div key={section.id} className="card">
                 <h3 style={{ marginTop: 0, fontSize: 15 }}>{section.label}</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {section.items.map((item) => (
                     <div
-                      key={item.key}
+                      key={item.id}
                       style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}
                     >
                       <input
@@ -140,6 +161,57 @@ export default function ChecklistCampoPage() {
                     </div>
                   ))}
                 </div>
+
+                {addingToSectionId === section.id ? (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                    <input
+                      autoFocus
+                      className="input"
+                      style={{ flex: 1, padding: '4px 6px', fontSize: 13 }}
+                      placeholder="Nome do item"
+                      value={newItemLabel}
+                      onChange={(e) => setNewItemLabel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitNewItem(section.id);
+                        if (e.key === 'Escape') setAddingToSectionId(null);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      disabled={createItemMutation.isPending || !newItemLabel.trim()}
+                      onClick={() => submitNewItem(section.id)}
+                    >
+                      Adicionar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      onClick={() => setAddingToSectionId(null)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ marginTop: 10, padding: '4px 10px', fontSize: 12 }}
+                    onClick={() => {
+                      setAddingToSectionId(section.id);
+                      setNewItemLabel('');
+                    }}
+                  >
+                    + Adicionar item
+                  </button>
+                )}
+                {createItemMutation.isError && addingToSectionId === section.id && (
+                  <p style={{ color: 'var(--color-danger)', fontSize: 12, marginTop: 6, marginBottom: 0 }}>
+                    Não foi possível adicionar.
+                  </p>
+                )}
               </div>
             ))}
           </div>

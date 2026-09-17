@@ -13,7 +13,7 @@ import {
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FIELD_CHECKLIST_SECTIONS, FieldChecklistAttachmentDto } from '@portal-alvim/shared';
+import { ChecklistSectionDto, FieldChecklistAttachmentDto } from '@portal-alvim/shared';
 import { schedulesApi } from '../../../../../../lib/api/schedules.api';
 import { fieldChecklistsApi } from '../../../../../../lib/api/field-checklists.api';
 import { MobileUploadFile } from '../../../../../../lib/api/service-photos.api';
@@ -21,12 +21,12 @@ import { tokenStorage } from '../../../../../../lib/auth/storage';
 import { ColorPalette } from '../../../../../../lib/theme/palettes';
 import { useThemeColors } from '../../../../../../lib/theme/ThemeContext';
 
-// Check list de material de campo — mesmo conteúdo fixo do portal web (ver
-// FIELD_CHECKLIST_SECTIONS), cada item com uma quantidade em vez de
-// marcado/desmarcado. Um registro por agendamento; salvar de novo
-// sobrescreve. Quem prefere papel imprime o modelo em branco (pelo portal
-// web), preenche à mão e anexa a(s) foto(s) aqui — convive com o
-// preenchimento digital.
+// Check list de material de campo — catálogo de seções/itens vem do banco
+// (editável só pelo portal web, ver ChecklistCatalogService; o app só lê),
+// cada item com uma quantidade em vez de marcado/desmarcado. Um registro
+// por agendamento; salvar de novo sobrescreve. Quem prefere papel imprime
+// o modelo em branco (pelo portal web), preenche à mão e anexa a(s)
+// foto(s) aqui — convive com o preenchimento digital.
 export default function ChecklistCampoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -47,11 +47,17 @@ export default function ChecklistCampoScreen() {
     enabled: !!id,
   });
 
-  const { data: checklist, isLoading } = useQuery({
+  const { data: sections, isLoading: isLoadingSections } = useQuery({
+    queryKey: ['checklist-sections'],
+    queryFn: fieldChecklistsApi.listSections,
+  });
+
+  const { data: checklist, isLoading: isLoadingChecklist } = useQuery({
     queryKey: ['field-checklist', id],
     queryFn: () => fieldChecklistsApi.get(id),
     enabled: !!id,
   });
+  const isLoading = isLoadingSections || isLoadingChecklist;
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [initialized, setInitialized] = useState(false);
@@ -124,7 +130,8 @@ export default function ChecklistCampoScreen() {
     ]);
   }
 
-  const totalItems = FIELD_CHECKLIST_SECTIONS.reduce((sum, section) => sum + section.items.length, 0);
+  const typedSections: ChecklistSectionDto[] = sections ?? [];
+  const totalItems = typedSections.reduce((sum, section) => sum + section.items.length, 0);
   const filledCount = Object.values(quantities).filter((q) => q > 0).length;
   const attachments: FieldChecklistAttachmentDto[] = checklist?.attachments ?? [];
 
@@ -147,11 +154,11 @@ export default function ChecklistCampoScreen() {
               {checklist && checklist.filledByName && ` Última vez por ${checklist.filledByName}.`}
             </Text>
 
-            {FIELD_CHECKLIST_SECTIONS.map((section) => (
-              <View key={section.key} style={styles.section}>
+            {typedSections.map((section) => (
+              <View key={section.id} style={styles.section}>
                 <Text style={styles.sectionTitle}>{section.label}</Text>
                 {section.items.map((item) => (
-                  <View key={item.key} style={styles.itemRow}>
+                  <View key={item.id} style={styles.itemRow}>
                     <TextInput
                       style={styles.qtyInput}
                       keyboardType="number-pad"

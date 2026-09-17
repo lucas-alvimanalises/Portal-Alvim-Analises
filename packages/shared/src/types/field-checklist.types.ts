@@ -1,7 +1,7 @@
 // Check list de material de campo preenchido por serviço — ver
-// FIELD_CHECKLIST_SECTIONS (constants) pra lista fixa de itens/seções.
-// quantities: { itemKey: quantidade } — só entram itens com quantidade > 0
-// (ex.: "impingers": 9).
+// ChecklistSectionDto (checklist-catalog.types) pro catálogo de itens/seções
+// (editável pelo portal). quantities: { itemKey: quantidade } — só entram
+// itens com quantidade > 0 (ex.: "impingers": 9), chave = ChecklistItem.key.
 // Foto/PDF de um checklist preenchido no papel, anexado ao checklist do
 // serviço (colaborador que prefere papel). Vários por checklist.
 export interface FieldChecklistAttachmentDto {

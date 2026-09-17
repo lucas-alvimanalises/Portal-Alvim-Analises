@@ -1,6 +1,6 @@
-// Listas fixas do formulário de Manutenção da Planta — mesmo formato de
-// FIELD_CHECKLIST_SECTIONS: chave estável salva no banco (ver
-// PlantMaintenance.types/objectives), rótulo em pt-BR pra exibição. "Outro"
+// Listas fixas do formulário de Manutenção da Planta: chave estável salva
+// no banco (ver PlantMaintenance.types/objectives), rótulo em pt-BR pra
+// exibição. "Outro"
 // não entra aqui — é tratado como um campo de texto livre separado
 // (otherType/otherObjective) no formulário e no schema.
 export interface MaintenanceOption {

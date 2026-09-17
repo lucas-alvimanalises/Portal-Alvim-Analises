@@ -1,8 +1,13 @@
-import { FieldChecklistDto, SaveFieldChecklistPayload } from '@portal-alvim/shared';
+import { ChecklistSectionDto, FieldChecklistDto, SaveFieldChecklistPayload } from '@portal-alvim/shared';
 import { apiClient, API_URL } from './client';
 import { MobileUploadFile } from './service-photos.api';
 
 export const fieldChecklistsApi = {
+  // Catálogo de seções/itens — editável só pelo portal web; o app só lê.
+  listSections: async () => {
+    const { data } = await apiClient.get<ChecklistSectionDto[]>('field-checklists/sections');
+    return data;
+  },
   // null quando o serviço ainda não teve o checklist preenchido nem anexado.
   get: async (scheduleId: string) => {
     const { data } = await apiClient.get<FieldChecklistDto | null>(`field-checklists/${scheduleId}`);

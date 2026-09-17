@@ -7,6 +7,7 @@ import {
   FileStorageService,
 } from '../attachments/domain/file-storage.interface';
 import { buildBlankFieldChecklistPdf } from './field-checklist-pdf.util';
+import { ChecklistCatalogService } from './checklist-catalog.service';
 
 const INCLUDE = {
   filledBy: { select: { name: true } },
@@ -34,17 +35,18 @@ type ChecklistWithRelations = {
   }[];
 };
 
-// Check list de material de campo (ver FIELD_CHECKLIST_SECTIONS em
-// @portal-alvim/shared pra lista fixa de itens) — um registro por
-// agendamento, salvar de novo sobrescreve. Quem prefere papel imprime o
-// modelo em branco (getBlankPdf), preenche à mão e anexa a foto/PDF de
-// volta (uploadAttachment) — convive com o preenchimento digital em
-// `quantities`, não substitui.
+// Check list de material de campo (ver ChecklistCatalogService pro catálogo
+// de itens, editável pelo portal) — um registro por agendamento, salvar de
+// novo sobrescreve. Quem prefere papel imprime o modelo em branco
+// (getBlankPdf), preenche à mão e anexa a foto/PDF de volta
+// (uploadAttachment) — convive com o preenchimento digital em `quantities`,
+// não substitui.
 @Injectable()
 export class FieldChecklistsService {
   constructor(
     private readonly prisma: PrismaService,
     @Inject(FILE_STORAGE_SERVICE) private readonly fileStorageService: FileStorageService,
+    private readonly checklistCatalogService: ChecklistCatalogService,
   ) {}
 
   async get(scheduleId: string): Promise<FieldChecklistDto | null> {
@@ -91,11 +93,15 @@ export class FieldChecklistsService {
     if (!schedule) {
       throw new NotFoundException('Agendamento não encontrado.');
     }
-    const buffer = buildBlankFieldChecklistPdf({
-      clientName: schedule.client.companyName,
-      serviceTypeName: schedule.serviceType.name,
-      scheduledDate: schedule.scheduledDate.toISOString().slice(0, 10),
-    });
+    const sections = await this.checklistCatalogService.listSections();
+    const buffer = buildBlankFieldChecklistPdf(
+      {
+        clientName: schedule.client.companyName,
+        serviceTypeName: schedule.serviceType.name,
+        scheduledDate: schedule.scheduledDate.toISOString().slice(0, 10),
+      },
+      sections,
+    );
     return { buffer, filename: 'checklist-campo-em-branco.pdf' };
   }
 

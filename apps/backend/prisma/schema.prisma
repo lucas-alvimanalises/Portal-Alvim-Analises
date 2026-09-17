@@ -455,9 +455,10 @@ model CalendarNote {
 
 // Check list de material de campo preenchido pelo técnico antes/depois do
 // serviço (ver "Organizar Serviço" > "Preencher Check List de Campo",
-// adaptado do "CheckList Alvim Análises.xlsx"). checkedItems guarda só as
-// chaves marcadas (ver FIELD_CHECKLIST_SECTIONS em @portal-alvim/shared) —
-// a lista de itens em si é fixa no código, não no banco. Um só por
+// adaptado do "CheckList Alvim Análises.xlsx"). quantities guarda só as
+// chaves com quantidade > 0, referenciando ChecklistItem.key — o catálogo de
+// seções/itens em si mora em ChecklistSection/ChecklistItem (editável pelo
+// portal, ver ChecklistCatalogService), não é mais fixo no código. Um só por
 // agendamento; salvar de novo sobrescreve (o técnico pode reabrir e
 // corrigir antes/depois de ir a campo).
 model ServiceChecklist {
@@ -467,8 +468,8 @@ model ServiceChecklist {
   schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 
   // { itemKey: quantidade } — só entra aqui quem tem quantidade > 0 (ex.:
-  // "impingers": 9). Ver FIELD_CHECKLIST_SECTIONS em @portal-alvim/shared
-  // pra lista fixa de itens.
+  // "impingers": 9). Chave = ChecklistItem.key; item removido do catálogo
+  // não apaga o valor já salvo aqui, só some da tela.
   quantities Json
 
   filledById String
@@ -484,6 +485,42 @@ model ServiceChecklist {
   attachments Attachment[]
 
   @@map("service_checklists")
+}
+
+// Seção do Check List de Material de Campo (Vidrarias, Material p/
+// Amostragem, ...) — catálogo editável pelo portal (ver
+// ChecklistCatalogService), migrado uma vez do antigo FIELD_CHECKLIST_SECTIONS
+// fixo no código (ver scripts/seed-checklist-catalog.ts). Só as 6 seções
+// originais existem hoje; criar seção nova ainda não tem tela (só itens
+// dentro de uma seção existente).
+model ChecklistSection {
+  id    String @id @default(uuid())
+  key   String @unique
+  label String
+  order Int    @default(0)
+
+  items ChecklistItem[]
+
+  @@map("checklist_sections")
+}
+
+// Item de uma seção do checklist — `key` é o que fica salvo em
+// ServiceChecklist.quantities, nunca reaproveitado mesmo se o item for
+// desativado (mesmo princípio que já valia pra lista fixa). `active: false`
+// esconde da tela/PDF sem apagar quantities já salvas que referenciam essa
+// chave.
+model ChecklistItem {
+  id     String  @id @default(uuid())
+  key    String  @unique
+  label  String
+  order  Int     @default(0)
+  active Boolean @default(true)
+
+  sectionId String
+  section   ChecklistSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@index([sectionId])
+  @@map("checklist_items")
 }
 
 // Compostos analisáveis (11000 - Siloxanos, 12000 - VOCs, ...): lookup

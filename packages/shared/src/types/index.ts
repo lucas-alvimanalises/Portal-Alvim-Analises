@@ -17,6 +17,7 @@ export * from './certificate-extraction.types';
 export * from './calendar-note.types';
 export * from './printed-label.types';
 export * from './field-checklist.types';
+export * from './checklist-catalog.types';
 export * from './plant-maintenance.types';
 export * from './anp-monthly-report.types';
 export * from './local-tip.types';
