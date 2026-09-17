@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ServiceLabelGroupDto } from '@portal-alvim/shared';
 import { labelsApi } from '../../../../../../lib/api/labels.api';
@@ -50,16 +50,25 @@ function groupRange(group: ServiceLabelGroupDto): string {
 // consome as sequências. Idempotente — reabrir mostra os mesmos números.
 export default function ImprimirEtiquetasServicoPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const [confirmedGroups, setConfirmedGroups] = useState<ServiceLabelGroupDto[] | null>(null);
 
+  // Composto(s) que o usuário decidiu deixar de fora deste lote (ver o
+  // "Imprimir etiqueta de VOCs também?" em Organizar Serviço) — vem como
+  // ?excludeCodes=12000 na URL, nunca chega até aqui pra preview nem confirm.
+  const excludeCodes = useMemo(
+    () => searchParams.get('excludeCodes')?.split(',').filter(Boolean) ?? [],
+    [searchParams],
+  );
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['labels', 'service-preview', params.id],
-    queryFn: () => labelsApi.servicePreview(params.id),
+    queryKey: ['labels', 'service-preview', params.id, excludeCodes],
+    queryFn: () => labelsApi.servicePreview(params.id, excludeCodes),
     enabled: !confirmedGroups,
   });
 
   const confirmMutation = useMutation({
-    mutationFn: () => labelsApi.serviceConfirm(params.id),
+    mutationFn: () => labelsApi.serviceConfirm(params.id, excludeCodes),
     onSuccess: (res) => {
       setConfirmedGroups(res.groups);
       window.print();
@@ -110,7 +119,9 @@ export default function ImprimirEtiquetasServicoPage() {
 
         {!isLoading && groups.length === 0 && (
           <p style={{ color: 'var(--color-text-muted)' }}>
-            Este agendamento não tem composto com etiqueta física (Siloxanos, Compostos Sulfurados ou VOCs).
+            {excludeCodes.length > 0
+              ? 'Nenhuma etiqueta pra imprimir — os únicos compostos com etiqueta deste agendamento foram deixados de fora.'
+              : 'Este agendamento não tem composto com etiqueta física (Siloxanos, Compostos Sulfurados ou VOCs).'}
           </p>
         )}
 

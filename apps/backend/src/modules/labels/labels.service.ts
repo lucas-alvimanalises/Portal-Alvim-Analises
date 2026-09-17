@@ -240,8 +240,13 @@ export class LabelsService {
 
   // Quais compostos de etiqueta (Siloxanos/Compostos Sulfurados/VOCs) fazem
   // parte deste agendamento, na ordem fixa de LABEL_COMPOUND_CODES.
+  // `excludeCodes` tira compostos opcionais que o usuário decidiu não
+  // imprimir desta vez (ver VOCS_OPTIONAL_CODE) — sem isso, o botão único
+  // sempre imprimia (e reservava número de) todo composto presente, mesmo
+  // quando aquela amostragem de VOCs específica não precisava de etiqueta.
   private async labelCompoundsInSchedule(
     scheduleId: string,
+    excludeCodes: string[] = [],
   ): Promise<{ id: string; code: string; name: string }[]> {
     const rows = await this.prisma.scheduleSamplingPointCompound.findMany({
       where: {
@@ -251,16 +256,19 @@ export class LabelsService {
       select: { compound: { select: { id: true, code: true, name: true } } },
     });
     const byCode = new Map(rows.map((r) => [r.compound.code, r.compound]));
-    return LABEL_COMPOUND_CODES.map((code) => byCode.get(code)).filter(
-      (c): c is { id: string; code: string; name: string } => !!c,
-    );
+    return LABEL_COMPOUND_CODES.filter((code) => !excludeCodes.includes(code))
+      .map((code) => byCode.get(code))
+      .filter((c): c is { id: string; code: string; name: string } => !!c);
   }
 
   // Botão "Imprimir Etiquetas Serviço" — prévia de TODOS os grupos de
-  // etiqueta do agendamento de uma vez. Não grava nada (mesma regra do
-  // preview por composto).
-  async servicePreview(scheduleId: string): Promise<ServiceLabelsPreviewResponse> {
-    const compounds = await this.labelCompoundsInSchedule(scheduleId);
+  // etiqueta do agendamento de uma vez (menos os excluídos). Não grava
+  // nada (mesma regra do preview por composto).
+  async servicePreview(
+    scheduleId: string,
+    excludeCodes: string[] = [],
+  ): Promise<ServiceLabelsPreviewResponse> {
+    const compounds = await this.labelCompoundsInSchedule(scheduleId, excludeCodes);
     const groups = await Promise.all(
       compounds.map(async (compound) => {
         const preview = await this.previewLabels(scheduleId, compound.id);
@@ -276,12 +284,16 @@ export class LabelsService {
     return { groups };
   }
 
-  // Confirma a impressão de todos os grupos de etiqueta do agendamento.
-  // Cada composto é confirmado pela mesma rotina idempotente do fluxo por
-  // composto — se um falhar, os já confirmados permanecem e o retry
-  // reaproveita os números.
-  async serviceConfirm(scheduleId: string, userId: string): Promise<ServiceLabelsPreviewResponse> {
-    const compounds = await this.labelCompoundsInSchedule(scheduleId);
+  // Confirma a impressão de todos os grupos de etiqueta do agendamento
+  // (menos os excluídos). Cada composto é confirmado pela mesma rotina
+  // idempotente do fluxo por composto — se um falhar, os já confirmados
+  // permanecem e o retry reaproveita os números.
+  async serviceConfirm(
+    scheduleId: string,
+    userId: string,
+    excludeCodes: string[] = [],
+  ): Promise<ServiceLabelsPreviewResponse> {
+    const compounds = await this.labelCompoundsInSchedule(scheduleId, excludeCodes);
     const groups: ServiceLabelsPreviewResponse['groups'] = [];
     for (const compound of compounds) {
       const labels = await this.confirmPrint(scheduleId, compound.id, userId);

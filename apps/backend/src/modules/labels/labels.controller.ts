@@ -34,18 +34,23 @@ export class LabelsController {
   }
 
   // Botão "Imprimir Etiquetas Serviço" — todos os grupos de etiqueta do
-  // agendamento de uma vez. Preview não grava nada; confirm consome as
-  // sequências de todos os compostos.
+  // agendamento de uma vez (menos os excluídos, ver VOCS_LABEL_CODE).
+  // Preview não grava nada; confirm consome as sequências dos compostos
+  // incluídos. `excludeCodes` vem como lista separada por vírgula.
   @Get('service-preview')
-  servicePreview(@Query('scheduleId') scheduleId: string) {
+  servicePreview(@Query('scheduleId') scheduleId: string, @Query('excludeCodes') excludeCodes?: string) {
     if (!scheduleId) {
       throw new BadRequestException('Informe scheduleId.');
     }
-    return this.labelsService.servicePreview(scheduleId);
+    return this.labelsService.servicePreview(scheduleId, this.parseExcludeCodes(excludeCodes));
   }
 
   @Post('service-confirm')
   serviceConfirm(@Body() dto: ConfirmServiceLabelsDto, @CurrentUser() user: AuthenticatedUser) {
-    return this.labelsService.serviceConfirm(dto.scheduleId, user.id);
+    return this.labelsService.serviceConfirm(dto.scheduleId, user.id, dto.excludeCodes ?? []);
+  }
+
+  private parseExcludeCodes(raw: string | undefined): string[] {
+    return raw?.split(',').map((code) => code.trim()).filter(Boolean) ?? [];
   }
 }

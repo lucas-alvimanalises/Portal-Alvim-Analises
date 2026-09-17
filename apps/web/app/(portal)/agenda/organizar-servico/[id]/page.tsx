@@ -30,6 +30,21 @@ export default function OrganizarServicoPage() {
   const hasLabelCompound = compounds.some((c) =>
     [SILOXANOS_CODE, VOCS_CODE, ENXOFRE_CODE].includes(c.code),
   );
+  const hasVocs = compounds.some((c) => c.code === VOCS_CODE);
+
+  // Nem toda amostragem de VOCs do planejamento precisa de etiqueta física
+  // (diferente de Siloxanos/Compostos Sulfurados, que sempre precisam) —
+  // pergunta antes de incluir o grupo de VOCs no lote, em vez de sempre
+  // imprimir (e reservar número) sem necessidade.
+  function handlePrintLabels() {
+    const url = `/agenda/organizar-servico/${scheduleId}/etiquetas`;
+    if (hasVocs) {
+      const includeVocs = window.confirm('Imprimir etiqueta de VOCs também?');
+      window.open(includeVocs ? url : `${url}?excludeCodes=${VOCS_CODE}`, '_blank');
+      return;
+    }
+    window.open(url, '_blank');
+  }
 
   return (
     <div>
@@ -54,14 +69,14 @@ export default function OrganizarServicoPage() {
         </button>
 
         {hasLabelCompound && (
-          <Link
-            href={`/agenda/organizar-servico/${scheduleId}/etiquetas`}
-            target="_blank"
+          <button
+            type="button"
             className="btn btn-secondary"
             style={{ justifyContent: 'flex-start' }}
+            onClick={handlePrintLabels}
           >
             Imprimir Etiquetas Serviço
-          </Link>
+          </button>
         )}
 
         <Link

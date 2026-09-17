@@ -20,8 +20,13 @@ export const labelsApi = {
     apiClient.post<PrintedLabelDto[]>('labels/confirm', payload),
   // "Imprimir Etiquetas Serviço" — todos os grupos de etiqueta do
   // agendamento (Siloxanos/Compostos Sulfurados/VOCs) de uma vez.
-  servicePreview: (scheduleId: string) =>
-    apiClient.get<ServiceLabelsPreviewResponse>(`labels/service-preview?scheduleId=${scheduleId}`),
-  serviceConfirm: (scheduleId: string) =>
-    apiClient.post<ServiceLabelsPreviewResponse>('labels/service-confirm', { scheduleId }),
+  // excludeCodes tira compostos opcionais (ver VOCS_LABEL_CODE) que o
+  // usuário decidiu não imprimir desta vez.
+  servicePreview: (scheduleId: string, excludeCodes: string[] = []) => {
+    const query = new URLSearchParams({ scheduleId });
+    if (excludeCodes.length) query.set('excludeCodes', excludeCodes.join(','));
+    return apiClient.get<ServiceLabelsPreviewResponse>(`labels/service-preview?${query.toString()}`);
+  },
+  serviceConfirm: (scheduleId: string, excludeCodes: string[] = []) =>
+    apiClient.post<ServiceLabelsPreviewResponse>('labels/service-confirm', { scheduleId, excludeCodes }),
 };

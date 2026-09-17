@@ -41,6 +41,14 @@ export interface PrintLabelsPayload {
 // Compostos Sulfurados, depois VOCs.
 export const LABEL_COMPOUND_CODES = ['11000', '22000', '12000'] as const;
 
+// VOCs (12000) é o único composto de etiqueta "opcional" hoje: nem toda
+// amostragem de VOCs do planejamento precisa de etiqueta física — por isso
+// o botão "Imprimir Etiquetas Serviço" pergunta antes de incluir o grupo de
+// VOCs (ver excludeCodes em ServiceLabelsPreviewParams/
+// ConfirmServiceLabelsPayload). Siloxanos e Compostos Sulfurados continuam
+// sempre incluídos quando presentes no agendamento.
+export const VOCS_LABEL_CODE = '12000';
+
 export interface ServiceLabelGroupDto {
   compoundId: string;
   compoundCode: string;
@@ -60,4 +68,7 @@ export interface ServiceLabelsPreviewResponse {
 
 export interface ConfirmServiceLabelsPayload {
   scheduleId: string;
+  // Códigos de composto pra deixar de fora deste lote (ver VOCS_LABEL_CODE)
+  // — o composto some do resultado e sua sequência não é consumida.
+  excludeCodes?: string[];
 }
