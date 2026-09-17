@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -20,6 +20,7 @@ export default function DocumentosCompartilhadosPage() {
   const isClient = me?.role === Role.CLIENT;
   const { activeClientId, isLoading: isLoadingActiveClient } = useActiveClient();
   const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (isClient && activeClientId) {
@@ -37,39 +38,49 @@ export default function DocumentosCompartilhadosPage() {
     return <p>{isLoadingActiveClient ? 'Carregando...' : 'Redirecionando...'}</p>;
   }
 
+  const visibleClients = clients
+    ?.filter((c) => c.status === 'ACTIVE')
+    .filter((c) => c.companyName.toLowerCase().includes(searchTerm.trim().toLowerCase()));
+
   return (
     <div>
       <div className="page-header">
         <h1>Documentos Compartilhados</h1>
       </div>
 
+      <input
+        className="input"
+        style={{ maxWidth: 320, marginBottom: 16 }}
+        placeholder="Pesquisar empresa..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+
       {isLoading ? (
         <TableSkeleton />
       ) : (
         <div className="card" style={{ padding: 0 }}>
-          {clients
-            ?.filter((c) => c.status === 'ACTIVE')
-            .map((client, index) => (
-              <Link
-                key={client.id}
-                href={`/documentos-compartilhados/${client.id}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  padding: '14px 16px',
-                  borderTop: index === 0 ? 'none' : '1px solid var(--color-border)',
-                }}
-              >
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{client.companyName}</span>
-                <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>▸</span>
-              </Link>
-            ))}
-          {clients?.filter((c) => c.status === 'ACTIVE').length === 0 && (
+          {visibleClients?.map((client, index) => (
+            <Link
+              key={client.id}
+              href={`/documentos-compartilhados/${client.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                textDecoration: 'none',
+                color: 'inherit',
+                padding: '14px 16px',
+                borderTop: index === 0 ? 'none' : '1px solid var(--color-border)',
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: 14 }}>{client.companyName}</span>
+              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>▸</span>
+            </Link>
+          ))}
+          {visibleClients?.length === 0 && (
             <p style={{ padding: 16, color: 'var(--color-text-muted)' }}>
-              Nenhuma empresa cadastrada.
+              {searchTerm ? 'Nenhuma empresa encontrada.' : 'Nenhuma empresa cadastrada.'}
             </p>
           )}
         </div>
