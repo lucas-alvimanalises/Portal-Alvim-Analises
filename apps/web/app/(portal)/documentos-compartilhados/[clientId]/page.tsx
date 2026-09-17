@@ -99,6 +99,10 @@ export default function DocumentosCompartilhadosEmpresaPage() {
         </label>
       </div>
 
+      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: -8, marginBottom: 12 }}>
+        Aceita qualquer tipo de arquivo, incluindo pastas compactadas (.zip).
+      </p>
+
       {uploadError && (
         <p style={{ fontSize: 13, color: 'var(--color-danger)', marginTop: 0 }}>{uploadError}</p>
       )}
