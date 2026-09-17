@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthenticatedUser, Role } from '@portal-alvim/shared';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -6,6 +6,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ServiceResultsSummaryService } from './service-results-summary.service';
 import { GenerateServiceResultsSummaryDto } from './dto/generate-service-results-summary.dto';
+import { SaveResultsSummaryDraftDto } from './dto/save-results-summary-draft.dto';
 
 // Gerar/pré-visualizar continua ferramenta interna Alvim (ADMIN/MANAGER,
 // default de classe). Ver/baixar já gerado passou a ter perna pro Cliente
@@ -45,6 +46,15 @@ export class ServiceResultsSummaryController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.service.generate(scheduleId, dto, user);
+  }
+
+  @Patch(':scheduleId/draft')
+  saveDraft(
+    @Param('scheduleId') scheduleId: string,
+    @Body() dto: SaveResultsSummaryDraftDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.service.saveDraft(scheduleId, dto.comment, user);
   }
 
   @Get('reports/:id/file')

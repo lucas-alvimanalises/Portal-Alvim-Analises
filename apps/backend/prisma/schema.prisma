@@ -91,6 +91,7 @@ model User {
   anpRegulatoryLimitsUpdated       AnpRegulatoryLimit[]
   fieldReportsGenerated            FieldReport[]
   serviceResultsSummariesGenerated ServiceResultsSummary[]
+  resultsSummaryDraftsEdited       ServiceResultsSummaryDraft[]
   trackingShipmentsCreated         TrackingShipment[]      @relation("TrackingShipmentCreator")
 
   // Só populado quando role = CLIENT: um usuário-cliente (pessoa) pode ter
@@ -419,6 +420,7 @@ model Schedule {
   checklist        ServiceChecklist?
   fieldReport      FieldReport?
   resultsSummaries ServiceResultsSummary[]
+  resultsSummaryDraft ServiceResultsSummaryDraft?
 
   @@index([clientId])
   @@map("schedules")
@@ -1163,6 +1165,25 @@ model ServiceResultsSummary {
   @@unique([scheduleId, version])
   @@index([scheduleId])
   @@map("service_results_summaries")
+}
+
+// Rascunho do comentário do Resumo de Resultados — uma linha por serviço
+// (não versionado, ao contrário de ServiceResultsSummary), pra permitir
+// começar a escrever e continuar depois sem gerar um PDF a cada clique em
+// "Salvar Rascunho" (pedido do usuário). Apagado quando o resumo é
+// finalmente gerado (ver ServiceResultsSummaryService.generate) — o
+// comentário já virou uma versão de verdade nesse ponto.
+model ServiceResultsSummaryDraft {
+  scheduleId String   @id
+  schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  comment String @db.Text
+
+  updatedById String
+  updatedBy   User     @relation(fields: [updatedById], references: [id])
+  updatedAt   DateTime @updatedAt
+
+  @@map("service_results_summary_drafts")
 }
 
 enum TrackingShipmentStatus {

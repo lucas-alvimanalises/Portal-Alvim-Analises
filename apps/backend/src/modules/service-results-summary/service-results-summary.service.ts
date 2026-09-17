@@ -4,6 +4,7 @@ import {
   BarreiraComparisonRow,
   ComplianceStatus,
   GenerateServiceResultsSummaryPayload,
+  ResultsSummaryDraftDto,
   ServiceResultsSummaryDto,
   ServiceResultsSummaryLatestDto,
   ServiceResultsSummaryPreviewDto,
@@ -209,6 +210,11 @@ export class ServiceResultsSummaryService {
       select: { comment: true },
     });
 
+    const draft = await this.prisma.serviceResultsSummaryDraft.findUnique({
+      where: { scheduleId },
+      select: { comment: true, updatedAt: true },
+    });
+
     return {
       scheduleId,
       clientName: client.companyName,
@@ -219,7 +225,29 @@ export class ServiceResultsSummaryService {
       rows,
       barreiraComparison,
       latestComment: latest?.comment ?? null,
+      draftComment: draft?.comment ?? null,
+      draftUpdatedAt: draft?.updatedAt.toISOString() ?? null,
     };
+  }
+
+  // "Salvar Rascunho" — grava o comentário em andamento sem gerar PDF nem
+  // criar uma nova versão (ver ServiceResultsSummaryDraft), pra permitir
+  // continuar escrevendo depois. Uma linha só por serviço: salvar de novo
+  // sobrescreve o rascunho anterior.
+  async saveDraft(
+    scheduleId: string,
+    comment: string,
+    user: AuthenticatedUser,
+  ): Promise<ResultsSummaryDraftDto> {
+    await this.loadSchedule(scheduleId, user);
+
+    const draft = await this.prisma.serviceResultsSummaryDraft.upsert({
+      where: { scheduleId },
+      create: { scheduleId, comment, updatedById: user.id },
+      update: { comment, updatedById: user.id },
+    });
+
+    return { comment: draft.comment, updatedAt: draft.updatedAt.toISOString() };
   }
 
   // Alimenta o indicador da tabela de Realizados (ver ScheduleListView) —
@@ -344,6 +372,10 @@ export class ServiceResultsSummaryService {
       },
       include: { generatedBy: { select: { name: true } } },
     });
+
+    // O comentário do rascunho já virou uma versão de verdade — apaga pra
+    // não reaparecer como "rascunho pendente" numa próxima abertura do modal.
+    await this.prisma.serviceResultsSummaryDraft.deleteMany({ where: { scheduleId } });
 
     return this.toDto(summary);
   }

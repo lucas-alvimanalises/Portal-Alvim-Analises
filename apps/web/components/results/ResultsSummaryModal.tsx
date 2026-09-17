@@ -34,6 +34,8 @@ export function ResultsSummaryModal({ scheduleId, onClose }: ResultsSummaryModal
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
   const [touched, setTouched] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
   const { data: preview, isLoading } = useQuery({
     queryKey: ['results-summary', 'preview', scheduleId],
@@ -42,9 +44,11 @@ export function ResultsSummaryModal({ scheduleId, onClose }: ResultsSummaryModal
 
   // Só assume o comentário salvo como ponto de partida antes do usuário
   // mexer no campo — evita sobrescrever o que ele já digitou se a query
-  // revalidar no meio da edição.
+  // revalidar no meio da edição. Rascunho tem prioridade sobre o comentário
+  // da última versão já gerada, por representar uma intenção mais recente
+  // (ver ServiceResultsSummaryDraft).
   useEffect(() => {
-    if (preview && !touched) setComment(preview.latestComment ?? '');
+    if (preview && !touched) setComment(preview.draftComment ?? preview.latestComment ?? '');
   }, [preview, touched]);
 
   const generateMutation = useMutation({
@@ -54,6 +58,14 @@ export function ResultsSummaryModal({ scheduleId, onClose }: ResultsSummaryModal
       window.open(serviceResultsSummaryApi.fileUrl(summary.id), '_blank');
       onClose();
     },
+  });
+
+  // Grava o comentário em andamento sem gerar PDF nem fechar o modal — pra
+  // poder continuar escrevendo depois (pedido do usuário). Não mexe no
+  // histórico de versões (ver ResultsSummaryHistory).
+  const saveDraftMutation = useMutation({
+    mutationFn: () => serviceResultsSummaryApi.saveDraft(scheduleId, { comment }),
+    onSuccess: (draft) => setDraftSavedAt(draft.updatedAt),
   });
 
   const rows = preview?.rows ?? [];
@@ -74,8 +86,26 @@ export function ResultsSummaryModal({ scheduleId, onClose }: ResultsSummaryModal
         padding: 20,
       }}
     >
-      <div className="card" style={{ width: 760, maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }}>
-        <h3 style={{ marginTop: 0 }}>Gerar Resumo de Resultados</h3>
+      <div
+        className="card"
+        style={
+          expanded
+            ? { width: '95vw', height: '95vh', overflowY: 'auto' }
+            : { width: 760, maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' }
+        }
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 0 }}>Gerar Resumo de Resultados</h3>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            style={{ padding: '4px 10px', fontSize: 12 }}
+            onClick={() => setExpanded((current) => !current)}
+            title={expanded ? 'Restaurar tamanho' : 'Expandir'}
+          >
+            {expanded ? '⤡ Restaurar' : '⤢ Expandir'}
+          </button>
+        </div>
 
         {isLoading || !preview ? (
           <p style={{ fontSize: 13 }}>Carregando resumo...</p>
@@ -209,21 +239,29 @@ export function ResultsSummaryModal({ scheduleId, onClose }: ResultsSummaryModal
               <label>Comentários sobre os resultados</label>
               <textarea
                 className="input"
-                rows={4}
+                rows={expanded ? 10 : 4}
                 value={comment}
                 onChange={(e) => {
                   setTouched(true);
+                  setDraftSavedAt(null);
                   setComment(e.target.value);
                 }}
                 placeholder="Análise/observação da equipe Alvim sobre os resultados deste serviço..."
               />
+              {draftSavedAt && (
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>
+                  Rascunho salvo às {new Date(draftSavedAt).toLocaleTimeString('pt-BR')}.
+                </p>
+              )}
             </div>
 
-            {generateMutation.isError && (
+            {(generateMutation.isError || saveDraftMutation.isError) && (
               <p style={{ color: 'var(--color-danger)', fontSize: 13 }}>
                 {generateMutation.error instanceof ApiError
                   ? generateMutation.error.message
-                  : 'Não foi possível gerar o resumo.'}
+                  : saveDraftMutation.error instanceof ApiError
+                    ? saveDraftMutation.error.message
+                    : 'Não foi possível gerar o resumo.'}
               </p>
             )}
           </>
@@ -232,6 +270,14 @@ export function ResultsSummaryModal({ scheduleId, onClose }: ResultsSummaryModal
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => saveDraftMutation.mutate()}
+            disabled={saveDraftMutation.isPending || isLoading}
+          >
+            {saveDraftMutation.isPending ? 'Salvando...' : 'Salvar Rascunho'}
           </button>
           <button
             type="button"

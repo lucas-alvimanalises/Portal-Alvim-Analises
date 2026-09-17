@@ -1,5 +1,7 @@
 import {
   GenerateServiceResultsSummaryPayload,
+  ResultsSummaryDraftDto,
+  SaveResultsSummaryDraftPayload,
   ServiceResultsSummaryDto,
   ServiceResultsSummaryLatestDto,
   ServiceResultsSummaryPreviewDto,
@@ -21,6 +23,10 @@ export const serviceResultsSummaryApi = {
         ),
   generate: (scheduleId: string, payload: GenerateServiceResultsSummaryPayload) =>
     apiClient.post<ServiceResultsSummaryDto>(`service-results-summary/${scheduleId}/generate`, payload),
+  // "Salvar Rascunho" — não gera PDF nem cria versão, só grava o comentário
+  // em andamento pra continuar depois (ver ServiceResultsSummaryDraft).
+  saveDraft: (scheduleId: string, payload: SaveResultsSummaryDraftPayload) =>
+    apiClient.patch<ResultsSummaryDraftDto>(`service-results-summary/${scheduleId}/draft`, payload),
   // Link direto (inline) — mesmo padrão de custody-documents/anp-monthly-reports/field-reports.
   fileUrl: (id: string) => `/api/backend/service-results-summary/reports/${id}/file`,
 };

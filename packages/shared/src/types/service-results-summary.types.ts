@@ -45,6 +45,11 @@ export interface ServiceResultsSummaryPreviewDto {
   rows: ServiceResultsSummaryRow[];
   barreiraComparison: BarreiraComparisonRow[] | null;
   latestComment: string | null;
+  // Rascunho em andamento (ver ServiceResultsSummaryDraft) — tem prioridade
+  // sobre latestComment ao reabrir o gerador, por representar uma intenção
+  // mais recente que a última versão já finalizada. null se não há rascunho.
+  draftComment: string | null;
+  draftUpdatedAt: string | null;
 }
 
 export interface ServiceResultsSummaryDto {
@@ -70,4 +75,13 @@ export interface ServiceResultsSummaryLatestDto {
 
 export interface GenerateServiceResultsSummaryPayload {
   comment: string;
+}
+
+export interface SaveResultsSummaryDraftPayload {
+  comment: string;
+}
+
+export interface ResultsSummaryDraftDto {
+  comment: string;
+  updatedAt: string;
 }
